@@ -11,12 +11,11 @@ import: github.com/traefik/plugindemo
 summary: Description of what my plugin is doing
 
 # Medias associated to the plugin (optional)
-iconPath: foo/icon.png
-bannerPath: foo/banner.png
+# iconPath: foo/icon.png
+# bannerPath: foo/banner.png
 
 # Configuration data for your plugin.
 # This is mandatory,
 # and Traefik Pilot will try to execute the plugin with the data you provide as part of its startup validity tests.
 testData:
-  Headers:
-    Foo: Bar
+  multationWebhook: ""

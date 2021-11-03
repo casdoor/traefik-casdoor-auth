@@ -18,5 +18,4 @@ http:
     my-plugin:
       plugin:
         example:
-          headers:
-            Foo: Bar
+          multationWebhook: "http://127.0.0.1:9999/echo"
