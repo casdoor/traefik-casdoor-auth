@@ -7,8 +7,8 @@ import (
 
 func main(){
 	r := gin.Default()
-	r.GET("/echo", handler.EchoHandler)
-	r.GET("/auth",handler.ForwardAuthHandler)
-	r.GET("/callback",handler.CasdoorCallbackHandler)
+	r.Any("/echo", handler.TestHandler)
+	r.Any("/auth",handler.ForwardAuthHandler)
+	r.Any("/callback",handler.CasdoorCallbackHandler)
 	r.Run(":9999")
 }
