@@ -38,3 +38,13 @@ func (s *StateMemoryStorage)PopState(nonce int)(*State,error){
 	return state,nil
 
 }
+func (s *StateMemoryStorage)GetState(nonce int)(*State,error){
+	s.Lock()
+	defer s.Unlock()
+	state,ok:=s.content[nonce]
+	if !ok{
+		return nil,fmt.Errorf("state %d not found",nonce)
+	}
+	return state,nil
+
+}

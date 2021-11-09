@@ -18,4 +18,4 @@ http:
     my-plugin:
       plugin:
         example:
-          multationWebhook: "http://127.0.0.1:9999/echo"
+          multationWebhook: "http://127.0.0.1:9999/auth"

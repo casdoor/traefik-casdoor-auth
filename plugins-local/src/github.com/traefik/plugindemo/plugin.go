@@ -57,8 +57,8 @@ func (p *Plugin) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		p.next.ServeHTTP(rw, req) //webhook is disabled, let it pass
 		return
 	}
-
 	client := &http.Client{Timeout: 5 * time.Second}
+	client.CheckRedirect=func(req *http.Request, via []*http.Request) error {return http.ErrUseLastResponse}
 	//forward this to the specified webhook
 	reqForWebhook, err := p.copyRequestForWebhook(req)
 	if err != nil {
@@ -79,7 +79,7 @@ func (p *Plugin) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	//but, the body, the header, the uri(not url) may be replaced
 	//if the response want we to do so.
 	// if the status code is not what we want, the response will be directly returned to user
-
+	
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		//pass, replace the header if necessary
 		responseBody, err := ioutil.ReadAll(resp.Body)
@@ -114,13 +114,13 @@ func (p *Plugin) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			rw.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		rw.WriteHeader(resp.StatusCode)
 		_, err = rw.Write(responseBody)
 		if err != nil {
 			fmt.Fprintf(rw, "error when writing response: %s", err.Error())
 			rw.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		rw.WriteHeader(resp.StatusCode)
 		return
 	}
 
@@ -151,6 +151,9 @@ func (p *Plugin) copyRequestForWebhook(req *http.Request) (*http.Request, error)
 	}
 	//copy the header
 	reqForWebhook.Header = req.Header.Clone()
+	//add uri if there is
+	reqForWebhook.Header.Set("X-Forwarded-URI",req.RequestURI)
+
 	//and the cookie for casbin-plugin
 	// cookie,err:=req.Cookie("Casbin-Plugin-ClientCode")
 	// if err==nil{

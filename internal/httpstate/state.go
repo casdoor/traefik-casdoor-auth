@@ -3,6 +3,7 @@ package httpstate
 import "net/http"
 
 type State struct{
+	URL string
 	Header http.Header
 	Method string
 	Body []byte

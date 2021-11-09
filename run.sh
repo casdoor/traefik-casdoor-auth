@@ -1,1 +1,1 @@
-traefik --configFile="traefik.yml" --log.level=DEBUG
+sudo traefik --configFile="traefik.yml" --log.level=DEBUG

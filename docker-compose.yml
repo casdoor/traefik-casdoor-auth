@@ -7,21 +7,21 @@ services:
     image: traefik/whoami
     ports:
       - "5000:80"
-  # casdoor:
-  #   image: casbin/casdoor:latest
-  #   ports:
-  #     - "8000:8000"
-  #   depends_on:
-  #     - db
-  #   volumes:
-  #     - ./conf:/conf
-  # db:
-  #   restart: always
-  #   image: mysql:8.0.25
-  #   ports:
-  #     - "3306:3306"
-  #   environment:
-  #     MYSQL_ROOT_PASSWORD: 123456789
-  #   volumes:
-  #     - /usr/local/docker/mysql:/var/lib/mysql
+  casdoor:
+    image: casbin/casdoor:latest
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    volumes:
+      - ./conf:/conf
+  db:
+    restart: always
+    image: mysql:8.0.25
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456789
+    volumes:
+      - /usr/local/docker/mysql:/var/lib/mysql
       

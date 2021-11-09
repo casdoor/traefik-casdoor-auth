@@ -2,7 +2,7 @@
 #   token: "8acb984a-70bf-4b40-9c4e-b8bf6d09d311"
 entryPoints:
   web:
-    address: ":8888"
+    address: ":80"
 experimental:
   localPlugins:
     example:
