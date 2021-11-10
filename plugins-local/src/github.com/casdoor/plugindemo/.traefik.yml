@@ -5,7 +5,7 @@ displayName: Name of your plugin
 type: middleware
 
 # The import path of your plugin.
-import: github.com/traefik/plugindemo
+import: github.com/casdoor/plugindemo
 
 # A brief description of what your plugin is doing.
 summary: Description of what my plugin is doing

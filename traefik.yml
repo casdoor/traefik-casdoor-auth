@@ -6,7 +6,7 @@ entryPoints:
 experimental:
   localPlugins:
     example:
-      moduleName: github.com/traefik/plugindemo
+      moduleName: github.com/casdoor/plugindemo
 api:
   insecure: true
 providers:
