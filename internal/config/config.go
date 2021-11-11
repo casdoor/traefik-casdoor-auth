@@ -13,17 +13,38 @@
 // limitations under the License.
 package config
 
-import "github.com/casdoor/casdoor-go-sdk/auth"
+import (
+	"encoding/json"
+	"io/ioutil"
+	"log"
 
-var CasdoorEndpoint = "http://webhook.domain.local:8000"
-var CasfoorClientId = "88b2457a123984b48392"
-var CasdoorClientSecret = "1a3f5eb7990b92f135a78fab5d0327890f2ae8df"
+	"github.com/casdoor/casdoor-go-sdk/auth"
+)
 var CasdoorJwtSecret = "CasdoorSecret"
-var CasdoorOrganization = "Traefik ForwardAuth"
-var CasdoorApplication = "TraefikForwardAuthPlugin"
-var PluginDomain = "webhook.domain.local:9999"
-var PluginCallback = "http://webhook.domain.local:9999/callback"
+type Config struct{
+	CasdoorEndpoint string `json:"casdoorEndpoint"`
+	CasdoorClientId string `json:"casdoorClientId"`
+	CasdoorClientSecret string `json:"casdoorClientSecret"`
+	CasdoorOrganization string `json:"casdoorOrganization"`
+	CasdoorApplication string `json:"casdoorApplication"`
+	PluginEndpoint string `json:"pluginEndpoint"`
+}
 
-func init() {
-	auth.InitConfig(CasdoorEndpoint, CasfoorClientId, CasdoorClientSecret, CasdoorJwtSecret, CasdoorOrganization, CasdoorApplication)
+var CurrentConfig Config
+func LoadConfigFile(path string){
+	data, err := ioutil.ReadFile(path)
+	if err!=nil{
+		log.Fatalf("failed to read config file %s",path)
+	}
+
+	err=json.Unmarshal(data,&CurrentConfig)
+	if err!=nil{
+		log.Fatalf("failed to unmarshal config file %s: %s",path,err.Error())
+	}
+	auth.InitConfig(CurrentConfig.CasdoorEndpoint, 
+		CurrentConfig.CasdoorClientId,
+		CurrentConfig.CasdoorClientSecret,
+		CasdoorJwtSecret, 
+		CurrentConfig.CasdoorOrganization, 
+		CurrentConfig.CasdoorApplication)
 }
