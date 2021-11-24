@@ -19,32 +19,37 @@ import (
 	"log"
 
 	"github.com/casdoor/casdoor-go-sdk/auth"
+	_ "embed"
 )
-var CasdoorJwtSecret = "CasdoorSecret"
-type Config struct{
-	CasdoorEndpoint string `json:"casdoorEndpoint"`
-	CasdoorClientId string `json:"casdoorClientId"`
+
+//go:embed token.pem
+var CasdoorJwtSecret string
+
+type Config struct {
+	CasdoorEndpoint     string `json:"casdoorEndpoint"`
+	CasdoorClientId     string `json:"casdoorClientId"`
 	CasdoorClientSecret string `json:"casdoorClientSecret"`
 	CasdoorOrganization string `json:"casdoorOrganization"`
-	CasdoorApplication string `json:"casdoorApplication"`
-	PluginEndpoint string `json:"pluginEndpoint"`
+	CasdoorApplication  string `json:"casdoorApplication"`
+	PluginEndpoint      string `json:"pluginEndpoint"`
 }
 
 var CurrentConfig Config
-func LoadConfigFile(path string){
+
+func LoadConfigFile(path string) {
 	data, err := ioutil.ReadFile(path)
-	if err!=nil{
-		log.Fatalf("failed to read config file %s",path)
+	if err != nil {
+		log.Fatalf("failed to read config file %s", path)
 	}
 
-	err=json.Unmarshal(data,&CurrentConfig)
-	if err!=nil{
-		log.Fatalf("failed to unmarshal config file %s: %s",path,err.Error())
+	err = json.Unmarshal(data, &CurrentConfig)
+	if err != nil {
+		log.Fatalf("failed to unmarshal config file %s: %s", path, err.Error())
 	}
-	auth.InitConfig(CurrentConfig.CasdoorEndpoint, 
+	auth.InitConfig(CurrentConfig.CasdoorEndpoint,
 		CurrentConfig.CasdoorClientId,
 		CurrentConfig.CasdoorClientSecret,
-		CasdoorJwtSecret, 
-		CurrentConfig.CasdoorOrganization, 
+		CasdoorJwtSecret,
+		CurrentConfig.CasdoorOrganization,
 		CurrentConfig.CasdoorApplication)
 }
