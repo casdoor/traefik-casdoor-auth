@@ -19,10 +19,12 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
-	"github.com/casdoor/casdoor-go-sdk/auth"
 	"traefikcasdoor/internal/config"
 	"traefikcasdoor/internal/httpstate"
+
+	"github.com/casdoor/casdoor-go-sdk/auth"
 
 	"github.com/gin-gonic/gin"
 )
@@ -62,10 +64,11 @@ func ForwardAuthHandlerWithoutState(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
+	callbackURL:=strings.TrimRight(config.CurrentConfig.PluginEndpoint,"/")+"/callback"
 	//generate redirect url
-	redirectURL := fmt.Sprintf("%s/login/oauth/authorize?client_id=%s&response_type=code&redirect_uri=%s&scope=read&state=%s", config.CasdoorEndpoint,
-		config.CasfoorClientId,
-		config.PluginCallback,
+	redirectURL := fmt.Sprintf("%s/login/oauth/authorize?client_id=%s&response_type=code&redirect_uri=%s&scope=read&state=%s", config.CurrentConfig.CasdoorEndpoint,
+		config.CurrentConfig.CasdoorClientId,
+		callbackURL,
 		strconv.Itoa(stateNonce))
 
 	c.Redirect(307, redirectURL)
@@ -95,8 +98,16 @@ func CasdoorCallbackHandler(c *gin.Context) {
 	stateString := c.Query("state")
 	code := c.Query("code")
 	//write into cookie
-	c.SetCookie("client-code", code, 3600, "/", config.PluginDomain, false, true)
-	c.SetCookie("client-state", stateString, 3600, "/", config.PluginDomain, false, true)
+	var splits=strings.Split(config.CurrentConfig.PluginEndpoint,"://")
+	if len(splits)<2{
+		c.JSON(500, gin.H{
+			"error": "invalid webhook address in configuration" + stateString,
+		})
+		return
+	}
+	domain:=splits[1]
+	c.SetCookie("client-code", code, 3600, "/", domain, false, true)
+	c.SetCookie("client-state", stateString, 3600, "/", domain, false, true)
 	stateNonce, _ := strconv.Atoi(stateString)
 	state, err := stateStorage.GetState(stateNonce)
 	if err != nil {

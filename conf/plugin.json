@@ -1,0 +1,8 @@
+{
+    "casdoorEndpoint":"http://webhook.domain.local:8000",
+    "casdoorClientId":"88b2457a123984b48392",
+    "casdoorClientSecret":"1a3f5eb7990b92f135a78fab5d0327890f2ae8df",
+    "casdoorOrganization":"Traefik ForwardAuth",
+    "casdoorApplication":"TraefikForwardAuthPlugin",
+    "pluginEndPoint":"http://webhook.domain.local:9999"
+}

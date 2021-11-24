@@ -14,11 +14,16 @@
 package main
 
 import (
+	"flag"
 	"github.com/gin-gonic/gin"
 	"traefikcasdoor/internal/handler"
+	"traefikcasdoor/internal/config"
 )
 
 func main() {
+	filePath:=flag.String("configFile","conf/plugin.json","path to the config file")
+	flag.Parse()
+	config.LoadConfigFile(*filePath)
 	r := gin.Default()
 	r.Any("/echo", handler.TestHandler)
 	r.Any("/auth", handler.ForwardAuthHandler)
