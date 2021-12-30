@@ -78,7 +78,7 @@ func TestModifyRequestForTraefik(t *testing.T) {
 		body, err := ioutil.ReadAll(newRequest.Body)
 		So(err, ShouldBeNil)
 		So(string(body), ShouldEqual, "modified")
-		So(newRequest.URL.Host, ShouldEqual, "webhook.com")
+		So(newRequest.URL.Host, ShouldEqual, "test.com")
 		So(map[string][]string(newRequest.Header), ShouldResemble, replacement.Header)
 		cookie2, err := newRequest.Cookie("Casbin-Plugin-ClientCode")
 		So(err, ShouldBeNil)
