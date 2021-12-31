@@ -191,9 +191,9 @@ func (p *Plugin) modifyRequestForTraefik(req *http.Request, replacement Replacem
 	req.Body.Close()
 	var newRequest *http.Request
 	if replacement.ShouldReplaceBody {
-		newRequest, err = http.NewRequest(req.Method, p.webhook, bytes.NewReader([]byte(replacement.Body)))
+		newRequest, err = http.NewRequest(req.Method, req.URL.String(), bytes.NewReader([]byte(replacement.Body)))
 	} else {
-		newRequest, err = http.NewRequest(req.Method, p.webhook, bytes.NewReader(oldBody))
+		newRequest, err = http.NewRequest(req.Method, req.URL.String(), bytes.NewReader(oldBody))
 	}
 
 	if err != nil {
@@ -210,6 +210,9 @@ func (p *Plugin) modifyRequestForTraefik(req *http.Request, replacement Replacem
 	for _, cookie := range cookies {
 		req.AddCookie(cookie)
 	}
+
+	newRequest.RemoteAddr=req.RemoteAddr
+	newRequest.RequestURI=req.RequestURI
 
 	return newRequest, nil
 
