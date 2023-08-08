@@ -9,7 +9,7 @@ You need to have traefik,docker and casdoor installed.<br>
 casdoor:<https://casdoor.org/><br>
 traefik: <https://doc.traefik.io/><br>
 You also need to understand how traefik configurations works. We use yml configs here to exemplify. In case that you are not using the same way to configurate traefik, you need to convert the configurations into correct format you need by yourself.<br>
-The webhook itself is an app of casdoor(What's this? see <https://casdoor.org/docs/basic/basic-concept-introduction>). Register this application in casdoor and get the client id and client secret,casdoorOrganization name and casdoorApplication name.(If you don't know how to do this, see <https://casdoor.org/docs/application/config/>)
+The webhook itself is an app of casdoor(What's this? see <https://casdoor.org/docs/basic/core-concepts>). Register this application in casdoor and get the client id and client secret,casdoorOrganization name and casdoorApplication name.(If you don't know how to do this, see <https://casdoor.org/docs/application/config/>)
 
 ### 2.2 modify the configuration
 
