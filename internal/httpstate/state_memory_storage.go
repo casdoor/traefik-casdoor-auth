@@ -1,4 +1,4 @@
-// Copyright 2021 The casbin Authors. All Rights Reserved.
+// Copyright 2021 The Casdoor Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package httpstate
 
 import (
@@ -46,6 +47,7 @@ func (s *StateMemoryStorage) PopState(nonce int) (*State, error) {
 	if !ok {
 		return nil, fmt.Errorf("state %d not found", nonce)
 	}
+
 	delete(s.content, nonce)
 	return state, nil
 
@@ -57,6 +59,7 @@ func (s *StateMemoryStorage) GetState(nonce int) (*State, error) {
 	if !ok {
 		return nil, fmt.Errorf("state %d not found", nonce)
 	}
+
 	return state, nil
 
 }

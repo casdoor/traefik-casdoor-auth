@@ -1,4 +1,4 @@
-// Copyright 2021 The casbin Authors. All Rights Reserved.
+// Copyright 2021 The Casdoor Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package plugindemo
 
 import (
@@ -43,7 +44,7 @@ func TestCopyRequestForWebhook(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(string(body), ShouldEqual, "testbody")
 		So(newRequest.URL.Host, ShouldEqual, "webhook.com")
-		delete(newRequest.Header,"X-Forwarded-Uri")
+		delete(newRequest.Header, "X-Forwarded-Uri")
 		So(newRequest.Header, ShouldResemble, request.Header)
 		cookie2, err := newRequest.Cookie("Casbin-Plugin-ClientCode")
 		So(err, ShouldBeNil)
