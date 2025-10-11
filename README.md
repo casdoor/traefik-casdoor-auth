@@ -1,5 +1,9 @@
 # casdoor-traefik-plugin
 
+[![Docker Image CI](https://github.com/casdoor/traefik-casdoor-auth/actions/workflows/docker.yml/badge.svg)](https://github.com/casdoor/traefik-casdoor-auth/actions/workflows/docker.yml)
+
+**🚀 New to this project?** Check out the [Quick Start Guide](QUICKSTART.md) to get up and running in 5 minutes!
+
 ## Install
 
 ### Pre-built Docker Images
