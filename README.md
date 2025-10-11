@@ -18,6 +18,8 @@ This project supports two deployment modes:
 1. **Traefik Plugin Mode** (Experimental): Uses Traefik's local plugin system
 2. **Standalone ForwardAuth Mode** (Recommended for Production): Runs as a standalone service using Traefik's ForwardAuth middleware
 
+**Migrating from Plugin to Standalone?** See the [Migration Guide](MIGRATION.md) for step-by-step instructions.
+
 ### Standalone ForwardAuth Deployment
 
 The standalone mode is recommended for Kubernetes and production deployments as it doesn't rely on Traefik's experimental plugin system.
@@ -52,9 +54,11 @@ Use the provided `docker-compose.standalone.yml`:
 docker-compose -f docker-compose.standalone.yml up -d
 ```
 
+**Complete Example:** A full working example with Traefik configuration is available in the [`examples/standalone/`](examples/standalone/) directory.
+
 #### Kubernetes Deployment
 
-Example Kubernetes deployment manifests are provided in the `k8s/` directory (see below for configuration).
+Example Kubernetes deployment manifests are provided in the `k8s/` directory (see the [Kubernetes README](k8s/README.md) for detailed instructions).
 
 #### Traefik Configuration for Standalone Mode
 

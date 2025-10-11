@@ -1,0 +1,8 @@
+{
+    "casdoorEndpoint": "https://demo.casdoor.com",
+    "casdoorClientId": "your-client-id-here",
+    "casdoorClientSecret": "your-client-secret-here",
+    "casdoorOrganization": "built-in",
+    "casdoorApplication": "app-built-in",
+    "pluginEndPoint": "http://localhost:9999"
+}

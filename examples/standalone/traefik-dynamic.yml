@@ -1,0 +1,33 @@
+# Traefik Dynamic Configuration for Standalone ForwardAuth Mode
+http:
+  routers:
+    # Protected service router
+    protected-app:
+      rule: "Host(`app.example.com`)"
+      service: backend-service
+      entryPoints:
+        - web
+      middlewares:
+        - casdoor-auth
+
+  services:
+    # Your backend service
+    backend-service:
+      loadBalancer:
+        servers:
+          - url: "http://backend:8080"
+    
+    # Optional: Explicit service definition for auth (not required but shown for clarity)
+    casdoor-auth-service:
+      loadBalancer:
+        servers:
+          - url: "http://traefik-casdoor-auth:9999"
+
+  middlewares:
+    # ForwardAuth middleware pointing to the standalone auth service
+    casdoor-auth:
+      forwardAuth:
+        address: "http://traefik-casdoor-auth:9999/auth"
+        trustForwardHeader: true
+        authResponseHeaders:
+          - "X-Forwarded-User"

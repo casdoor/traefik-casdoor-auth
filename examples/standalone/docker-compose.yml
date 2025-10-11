@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # Traefik reverse proxy
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--configFile=/etc/traefik/traefik-static.yml"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik-static.yml:/etc/traefik/traefik-static.yml:ro
+      - ./traefik-dynamic.yml:/etc/traefik/traefik-dynamic.yml:ro
+    networks:
+      - traefik-network
+
+  # Traefik-Casdoor-Auth standalone ForwardAuth service
+  traefik-casdoor-auth:
+    image: ghcr.io/casdoor/traefik-casdoor-auth:latest
+    container_name: traefik-casdoor-auth
+    restart: unless-stopped
+    ports:
+      - "9999:9999"
+    volumes:
+      - ./plugin.json:/app/conf/plugin.json:ro
+    networks:
+      - traefik-network
+
+  # Example backend service (replace with your actual service)
+  backend:
+    image: traefik/whoami
+    container_name: backend
+    networks:
+      - traefik-network
+
+networks:
+  traefik-network:
+    name: traefik-network
