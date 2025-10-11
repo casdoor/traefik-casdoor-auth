@@ -1,0 +1,44 @@
+# Git files
+.git
+.gitignore
+.github
+
+# Documentation
+*.md
+README.md
+
+# IDE files
+.idea
+.vscode
+*.iml
+
+# Test files
+*_test.go
+
+# Build artifacts
+webhook
+bin/
+vendor/
+
+# Development files
+tmp/
+tmpFiles/
+*.tmp
+logs/
+files/
+lastupdate.tmp
+commentsRouter*.go
+
+# Docker files (don't need to copy into the image)
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Traefik plugin files (not needed for standalone webhook)
+plugins-local/
+
+# Development config files
+traefik.yml
+dev.yml
+run.sh
+test.sh

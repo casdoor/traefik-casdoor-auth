@@ -2,7 +2,106 @@
 
 ## Install
 
-A webhook image which can be easily run it as a sidecar: https://github.com/lostb1t/traefik-casdoor-auth
+### Pre-built Docker Images
+
+Official images are automatically built and published to GitHub Container Registry:
+```bash
+docker pull ghcr.io/casdoor/traefik-casdoor-auth:latest
+```
+
+Community-maintained image: https://github.com/lostb1t/traefik-casdoor-auth
+
+## Deployment Options
+
+This project supports two deployment modes:
+
+1. **Traefik Plugin Mode** (Experimental): Uses Traefik's local plugin system
+2. **Standalone ForwardAuth Mode** (Recommended for Production): Runs as a standalone service using Traefik's ForwardAuth middleware
+
+### Standalone ForwardAuth Deployment
+
+The standalone mode is recommended for Kubernetes and production deployments as it doesn't rely on Traefik's experimental plugin system.
+
+#### Using Docker
+
+You can use the pre-built image or build your own:
+
+**Using pre-built image:**
+```bash
+docker run -d \
+  -p 9999:9999 \
+  -v $(pwd)/conf/plugin.json:/app/conf/plugin.json:ro \
+  --name traefik-casdoor-auth \
+  ghcr.io/casdoor/traefik-casdoor-auth:latest
+```
+
+**Building your own image:**
+```bash
+docker build -t traefik-casdoor-auth .
+docker run -d \
+  -p 9999:9999 \
+  -v $(pwd)/conf/plugin.json:/app/conf/plugin.json:ro \
+  --name traefik-casdoor-auth \
+  traefik-casdoor-auth
+```
+
+#### Using Docker Compose
+
+Use the provided `docker-compose.standalone.yml`:
+```bash
+docker-compose -f docker-compose.standalone.yml up -d
+```
+
+#### Kubernetes Deployment
+
+Example Kubernetes deployment manifests are provided in the `k8s/` directory (see below for configuration).
+
+#### Traefik Configuration for Standalone Mode
+
+Configure Traefik to use ForwardAuth middleware instead of the plugin:
+
+**Static Configuration (traefik.yml):**
+```yaml
+entryPoints:
+  web:
+    address: ":80"
+api:
+  insecure: true
+providers:
+  file:
+    filename: dynamic.yml
+```
+
+**Dynamic Configuration (dynamic.yml):**
+```yaml
+http:
+  routers:
+    my-router:
+      rule: Host(`your-domain.local`)
+      service: my-service
+      entryPoints:
+        - web
+      middlewares:
+        - casdoor-auth
+
+  services:
+    my-service:
+      loadBalancer:
+        servers:
+          - url: http://your-backend-service:8080
+    
+    # ForwardAuth service
+    casdoor-auth-service:
+      loadBalancer:
+        servers:
+          - url: http://traefik-casdoor-auth:9999
+
+  middlewares:
+    casdoor-auth:
+      forwardAuth:
+        address: http://traefik-casdoor-auth:9999/auth
+        trustForwardHeader: true
+```
 
 ## 1. Introduction
 

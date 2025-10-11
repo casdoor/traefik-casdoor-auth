@@ -1,0 +1,27 @@
+# Example IngressRoute using Traefik CRDs with ForwardAuth middleware
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: casdoor-forwardauth
+  namespace: default
+spec:
+  forwardAuth:
+    address: http://traefik-casdoor-auth.traefik-casdoor-auth.svc.cluster.local:9999/auth
+    trustForwardHeader: true
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: my-protected-app
+  namespace: default
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`your-app.yourdomain.com`)
+      kind: Rule
+      services:
+        - name: your-backend-service
+          port: 8080
+      middlewares:
+        - name: casdoor-forwardauth

@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: traefik-casdoor-auth
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: casdoor-auth-config
+  namespace: traefik-casdoor-auth
+data:
+  plugin.json: |
+    {
+        "casdoorEndpoint":"https://your-casdoor-endpoint.com",
+        "casdoorClientId":"your-client-id",
+        "casdoorClientSecret":"your-client-secret",
+        "casdoorOrganization":"YourOrganization",
+        "casdoorApplication":"YourApplication",
+        "pluginEndPoint":"https://auth.yourdomain.com"
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traefik-casdoor-auth
+  namespace: traefik-casdoor-auth
+  labels:
+    app: traefik-casdoor-auth
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: traefik-casdoor-auth
+  template:
+    metadata:
+      labels:
+        app: traefik-casdoor-auth
+    spec:
+      containers:
+      - name: traefik-casdoor-auth
+        image: traefik-casdoor-auth:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 9999
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /app/conf
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /echo
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /echo
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+      volumes:
+      - name: config
+        configMap:
+          name: casdoor-auth-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik-casdoor-auth
+  namespace: traefik-casdoor-auth
+  labels:
+    app: traefik-casdoor-auth
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9999
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app: traefik-casdoor-auth

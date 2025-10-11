@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  # Traefik-Casdoor-Auth standalone ForwardAuth service
+  traefik-casdoor-auth:
+    # Use pre-built image or build locally by uncommenting the build section below
+    image: ghcr.io/casdoor/traefik-casdoor-auth:latest
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    container_name: traefik-casdoor-auth
+    restart: unless-stopped
+    ports:
+      - "9999:9999"
+    volumes:
+      # Mount your configuration file
+      - ./conf/plugin.json:/app/conf/plugin.json:ro
+    environment:
+      # You can override the config file path if needed
+      - CONFIG_FILE=/app/conf/plugin.json
+    networks:
+      - traefik-network
+
+networks:
+  traefik-network:
+    name: traefik-network
+    external: true
