@@ -121,6 +121,13 @@ func CasdoorCallbackHandler(c *gin.Context) {
 	}
 	//write into cookie - use the original host from X-Forwarded-Host
 	host := state.Header.Get("X-Forwarded-Host")
+	if host == "" {
+		fmt.Println("missing X-Forwarded-Host header in state")
+		c.JSON(500, gin.H{
+			"error": "missing X-Forwarded-Host header",
+		})
+		return
+	}
 	// Extract domain without port for cookie
 	domain := host
 	if colonIndex := strings.Index(host, ":"); colonIndex != -1 {
