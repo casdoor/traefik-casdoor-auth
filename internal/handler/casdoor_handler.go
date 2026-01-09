@@ -133,10 +133,12 @@ func CasdoorCallbackHandler(c *gin.Context) {
 	if colonIndex := strings.Index(host, ":"); colonIndex != -1 {
 		domain = host[:colonIndex]
 	}
-	c.SetCookie("client-code", code, 3600, "/", domain, false, true)
-	c.SetCookie("client-state", stateString, 3600, "/", domain, false, true)
-	//construct the redirect
+	// Set secure flag based on the original request's protocol
 	scheme := state.Header.Get("X-Forwarded-Proto")
+	secure := scheme == "https"
+	c.SetCookie("client-code", code, 3600, "/", domain, secure, true)
+	c.SetCookie("client-state", stateString, 3600, "/", domain, secure, true)
+	//construct the redirect
 	uri := state.Header.Get("X-Forwarded-URI")
 	url := fmt.Sprintf("%s://%s%s", scheme, host, uri)
 	c.Redirect(307, url)
