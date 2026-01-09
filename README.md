@@ -1,52 +1,150 @@
-# casdoor-traefik-plugin
+# Traefik Casdoor Auth Plugin
 
-## Install
+<p align="center">
+  <a href="#badge">
+    <img alt="semantic-release" src="https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg">
+  </a>
+  <a href="https://github.com/casdoor/traefik-casdoor-auth/actions/workflows/ci.yml">
+    <img alt="GitHub Workflow Status (branch)" src="https://img.shields.io/github/actions/workflow/status/casdoor/traefik-casdoor-auth/ci.yml?branch=master">
+  </a>
+  <a href="https://github.com/casdoor/traefik-casdoor-auth/releases/latest">
+    <img alt="GitHub Release" src="https://img.shields.io/github/v/release/casdoor/traefik-casdoor-auth.svg">
+  </a>
+</p>
 
-A webhook image which can be easily run it as a sidecar: https://github.com/lostb1t/traefik-casdoor-auth
+<p align="center">
+  <a href="https://goreportcard.com/report/github.com/casdoor/traefik-casdoor-auth">
+    <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/casdoor/traefik-casdoor-auth?style=flat-square">
+  </a>
+  <a href="https://github.com/casdoor/traefik-casdoor-auth/blob/master/LICENSE">
+    <img src="https://img.shields.io/github/license/casdoor/traefik-casdoor-auth?style=flat-square" alt="license">
+  </a>
+  <a href="https://github.com/casdoor/traefik-casdoor-auth/issues">
+    <img alt="GitHub issues" src="https://img.shields.io/github/issues/casdoor/traefik-casdoor-auth?style=flat-square">
+  </a>
+  <a href="#">
+    <img alt="GitHub stars" src="https://img.shields.io/github/stars/casdoor/traefik-casdoor-auth?style=flat-square">
+  </a>
+  <a href="https://github.com/casdoor/traefik-casdoor-auth/network">
+    <img alt="GitHub forks" src="https://img.shields.io/github/forks/casdoor/traefik-casdoor-auth?style=flat-square">
+  </a>
+  <a href="https://discord.gg/5rPsrAzK7S">
+    <img alt="Casdoor" src="https://img.shields.io/discord/1022748306096537660?style=flat-square&logo=discord&label=discord&color=5865F2">
+  </a>
+</p>
 
-## 1. Introduction
+A powerful Traefik middleware plugin that integrates [Casdoor](https://casdoor.org/) authentication to protect your HTTP services. This solution provides seamless SSO (Single Sign-On) capabilities without requiring any changes to your backend services.
 
-This is a solution for traefik which can be used to add authentication to any http service managed by traefik. This solution consists 2 parts: 
+## 📋 Table of Contents
 
-- A traefik plugin used to intercept the http request , forward to a special webhook(which is the second part of this plugin) and get instrcutions about what to do next from the webhook. 
-- A webhook which analyze the http request forwarded from the traefik plugin, and give out further instructions to traefik plugin and possibly cache it.
+- [Features](#-features)
+- [Architecture](#-architecture)
+- [Installation](#-installation)
+- [Quick Start](#-quick-start)
+- [Configuration](#-configuration)
+- [How It Works](#-how-it-works)
+- [Docker Deployment](#-docker-deployment)
+- [Development](#-development)
+- [Contributing](#-contributing)
+- [License](#-license)
 
-## 2. Quick start
+## ✨ Features
 
-### 2.1 Prerequisite
+- **Zero Backend Changes**: Add authentication to any HTTP service without modifying your application code
+- **Seamless SSO**: Integrate with Casdoor for centralized authentication and user management
+- **Traefik Middleware**: Implemented as a native Traefik plugin for easy integration
+- **Session Management**: Automatic session handling with secure cookies
+- **OAuth 2.0 Flow**: Complete OAuth 2.0 implementation with PKCE support
+- **Request Forwarding**: Transparent request modification and forwarding
+- **Stateless Architecture**: Webhook-based design for scalability
 
-You need to have traefik,docker and casdoor installed.<br>
+## 🏗 Architecture
 
-casdoor:<https://casdoor.org/><br>
-traefik: <https://doc.traefik.io/><br>
+This solution consists of two main components:
 
-You also need to understand how traefik configurations works. We use yml configs here to exemplify. In case that you are not using the same way to configurate traefik, you need to convert the configurations into correct format you need by yourself.<br>
+1. **Traefik Plugin**: A middleware that intercepts HTTP requests and forwards them to the webhook for authentication decisions
+2. **Authentication Webhook**: A service that validates user sessions, handles OAuth flows, and instructs the plugin how to process requests
 
-The webhook itself is an app of casdoor(What's this? see <https://casdoor.org/docs/basic/core-concepts>). Register this application in casdoor and get the client id and client secret,casdoorOrganization name and casdoorApplication name.(If you don't know how to do this, see <https://casdoor.org/docs/application/config/>)
+### Component Interaction
 
-### 2.2 modify the configuration
+```
+┌─────────┐      ┌──────────────┐      ┌──────────┐      ┌─────────┐
+│ Client  │─────▶│   Traefik    │─────▶│ Webhook  │─────▶│ Casdoor │
+│         │      │   Plugin     │      │  Service │      │  Server │
+└─────────┘      └──────────────┘      └──────────┘      └─────────┘
+                        │                     │
+                        └─────────────────────┘
+                         Authentication Flow
+```
 
-### 2.2.1 modify static configuration for traefik
+## 📦 Installation
+
+### Using Docker (Recommended)
+
+A pre-built webhook image is available for easy deployment:
+
+```bash
+docker pull ghcr.io/lostb1t/traefik-casdoor-auth:latest
+```
+
+For more details, visit: https://github.com/lostb1t/traefik-casdoor-auth
+
+### From Source
+
+**Prerequisites:**
+- Go 1.16 or higher
+- Traefik v2.x
+- Docker (for running example services)
+- A running [Casdoor](https://casdoor.org/) instance
+
+Clone the repository:
+
+```bash
+git clone https://github.com/casdoor/traefik-casdoor-auth.git
+cd traefik-casdoor-auth
+```
+
+## 🚀 Quick Start
+
+### Step 1: Configure Casdoor
+
+1. Access your Casdoor admin panel
+2. Create a new application for Traefik authentication
+3. Note down the following details:
+   - **Client ID**
+   - **Client Secret**
+   - **Organization Name**
+   - **Application Name**
+
+For detailed instructions, see [Casdoor Application Configuration](https://casdoor.org/docs/application/config/).
+
+### Step 2: Configure Traefik Static Configuration
+
+Create or update your `traefik.yml`:
 
 ```yaml
 entryPoints:
   web:
     address: ":80"
+
 experimental:
   localPlugins:
     example:
       moduleName: github.com/casdoor/plugindemo
+
 api:
   insecure: true
+
 providers:
   file:
     filename: dev.yml
 ```
 
-Here, we specify that we are using a local plugin (instead of an online plugin) named 'example'. The model name must be exactly the path name relative to the 'plugins-local/src' folder in the workspace. You can see that there is indeed codes of plugins in plugins-local/src/github.com/casdoor/plugindemo.In addition, this name is also the same with the name declared in the plugin(plugins-local/src/github.com/casdoor/plugindemo.traefik.yml) If you want to change the path, make sure you change them all.<br>
-We also point out that the dynamic configuration file is dev.yml.
+**Note**: The `moduleName` must match the path relative to `plugins-local/src/` and the module name in `plugins-local/src/github.com/casdoor/plugindemo/.traefik.yml`.
 
-### 2.2.2 dynamic configuration file
+### Step 3: Configure Traefik Dynamic Configuration
+
+Create `dev.yml`:
 
 ```yaml
 http:
@@ -60,7 +158,7 @@ http:
         - my-plugin
 
   services:
-   service-foo:
+    service-foo:
       loadBalancer:
         servers:
           - url: http://127.0.0.1:5000
@@ -72,65 +170,211 @@ http:
           multationWebhook: "http://webhook.domain.local:9999/auth"
 ```
 
-`http.routers.myroute` specified we want to apply a middleware called 'my-plugin' to service'webhook.domain.local'. `middlewares`paragraph specify that this plugin is a 'example'plugin(we defined in static configuration), and give out a parameter 'multationWebhook', which is the endpoint of the webhook. If you want to use a url other than this, you should change it here.
+### Step 4: Configure the Webhook
 
-### 2.2.3 webhook configuration file (conf/plugin.json)
+Create or update `conf/plugin.json`:
 
 ```json
 {
-    "casdoorEndpoint":"http://webhook.domain.local:8000", 
-    "casdoorClientId":"88b2457a123984b48392",
-    "casdoorClientSecret":"1a3f5eb7990b92f135a78fab5d0327890f2ae8df",
-    "casdoorOrganization":"Traefik ForwardAuth",
-    "casdoorApplication":"TraefikForwardAuthPlugin",
-    "pluginEndPoint":"http://webhook.domain.local:9999"
+    "casdoorEndpoint": "http://webhook.domain.local:8000",
+    "casdoorClientId": "YOUR_CLIENT_ID",
+    "casdoorClientSecret": "YOUR_CLIENT_SECRET",
+    "casdoorOrganization": "YOUR_ORGANIZATION",
+    "casdoorApplication": "YOUR_APPLICATION",
+    "pluginEndPoint": "http://webhook.domain.local:9999"
 }
 ```
 
-- "casdoorEndpoint": endpoint of casdoor
-- "casdoorClientId": casdoor client id
-- "casdoorClientSecret": casdoor client secret
-- "casdoorOrganization":organization name which casdoor app belongs to
-- "casdoorApplication": casdoor app name
-- "pluginEndPoint": the url of this webhook.
+**Configuration Parameters:**
 
-### 2.2.4 Run
+| Parameter | Description |
+|-----------|-------------|
+| `casdoorEndpoint` | URL of your Casdoor server |
+| `casdoorClientId` | Client ID from Casdoor application |
+| `casdoorClientSecret` | Client secret from Casdoor application |
+| `casdoorOrganization` | Organization name in Casdoor |
+| `casdoorApplication` | Application name in Casdoor |
+| `pluginEndPoint` | URL where the webhook service is accessible |
 
-#### modify host
+### Step 5: Update Hosts File
 
-modify host files of your instance to point 'webhook.domain.local' to localhost
-
-#### start a example service
+Add the following entry to your hosts file (`/etc/hosts` on Linux/Mac, `C:\Windows\System32\drivers\etc\hosts` on Windows):
 
 ```
+127.0.0.1    webhook.domain.local
+```
+
+### Step 6: Start Services
+
+**Start the example service:**
+
+```bash
 docker compose up -d
 ```
 
-this command runs a 'who am i' container at port 5000, which is the official example service used by traefik. I am quite sure that you should be familiar with this if you have ever tried traefik. This container start a web service, which always return information about your http request without any other authentication.
+This starts a "whoami" container on port 5000 - a simple HTTP service that echoes request information.
 
-#### start the traefik
+**Start Traefik:**
 
-```
+```bash
 sudo traefik --configFile="traefik.yml" --log.level=DEBUG
 ```
 
-### start the webhook 
+**Start the webhook service:**
 
-```shell
-go run cmd/webhook/main.go  -configFile="conf/plugin.json"
+```bash
+go run cmd/webhook/main.go -configFile="conf/plugin.json"
 ```
 
-Visit: http://webhook.domain.local. If you have nevered logged in, you will be redirected to the casdoor login page. If you have logged in through casdoor before, you will see the 'whoami'output: the reflection of your http request.  
+### Step 7: Test the Setup
 
-## 3. How it works?
+Visit http://webhook.domain.local in your browser.
 
-The traefik plugin will intercept any request for the protected service and forward this request to our webhook. After the webhook responsed , if the response status code is 2xx then, the original request will be modified based on the instruction given by the webhook (in the response body) and allowed to proceed. If the reponse status is not 2xx then the request will not proceed and the resoponse body as well as the status code given out by out webhook will be returned without any modification
+- **First visit**: You'll be redirected to Casdoor for authentication
+- **After login**: You'll be redirected back and see the "whoami" service output
 
-Once out webhook received the request forwarede by out plugin, it will check whether there exists a special cookie set by our webhook. If the special cookie doesn't exist, the webhook will return a 302 redirect, redirecting the user to casdoor login page with a proper redirect url pointing to another redirect handler of our webhook. Besides, the original request will be recorded.
+## ⚙️ Configuration
 
-After the user logged in, the user will be redirected to the redirect handler mentioned above. This time we will first trying to require the OAuthToken to check whethre the client code is legit set up the cookie, and redirect the user to the original URL he wanted to visit.
+### Traefik Plugin Configuration
 
+The plugin accepts the following parameter:
 
-If the user is redirected to the original URL he wanted to visit, this request will be forwarded to our webhook again. This time after confirming the existence of cookie, we will instruct the plugin to alter the requset to be the same with the first original request (because we have recorded it.)
-Thus without making the service be aware of the existence of authentication procedure, the user is authentication and the service is properly protected.
+- `multationWebhook`: The URL of the authentication webhook endpoint
+
+### Webhook Configuration
+
+All webhook configuration is stored in `conf/plugin.json`. See the [Quick Start](#step-4-configure-the-webhook) section for available parameters.
+
+## 🔄 How It Works
+
+### Authentication Flow
+
+1. **Initial Request**: Client requests a protected resource
+2. **Plugin Intercept**: Traefik plugin intercepts the request and forwards it to the webhook
+3. **Session Check**: Webhook checks for a valid authentication cookie
+4. **Redirect to Login**: If no valid session exists, webhook returns a 302 redirect to Casdoor
+5. **User Authentication**: User logs in via Casdoor
+6. **OAuth Callback**: Casdoor redirects to the webhook's callback handler
+7. **Token Exchange**: Webhook exchanges the authorization code for an access token
+8. **Cookie Creation**: Webhook sets a secure authentication cookie
+9. **Original Request Replay**: User is redirected to the original URL
+10. **Request Modification**: Plugin modifies the request based on webhook instructions and forwards to the backend service
+
+### Response Handling
+
+- **2xx Response from Webhook**: Request is modified according to webhook instructions and forwarded to the backend
+- **Non-2xx Response**: Request is blocked, and the webhook's response (including status code and body) is returned to the client
+
+## 🐳 Docker Deployment
+
+For production deployments, you can use Docker Compose. Here's an example configuration:
+
+```yaml
+version: '3'
+
+services:
+  traefik:
+    image: traefik:v2.9
+    command:
+      - "--configFile=/etc/traefik/traefik.yml"
+      - "--log.level=INFO"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./traefik.yml:/etc/traefik/traefik.yml
+      - ./dev.yml:/etc/traefik/dev.yml
+      - ./plugins-local:/plugins-local
+
+  casdoor-auth:
+    image: ghcr.io/lostb1t/traefik-casdoor-auth:latest
+    environment:
+      - CONFIG_FILE=/config/plugin.json
+    volumes:
+      - ./conf:/config
+    ports:
+      - "9999:9999"
+```
+
+## 🛠 Development
+
+### Running Tests
+
+Run the plugin tests:
+
+```bash
+cd plugins-local/src/github.com/casdoor/plugindemo
+go test -v ./...
+```
+
+### Project Structure
+
+```
+.
+├── cmd/
+│   └── webhook/           # Webhook service main package
+├── internal/
+│   ├── config/           # Configuration handling
+│   ├── handler/          # HTTP handlers
+│   └── httpstate/        # Session state management
+├── plugins-local/
+│   └── src/
+│       └── github.com/
+│           └── casdoor/
+│               └── plugindemo/  # Traefik plugin implementation
+├── conf/                 # Configuration files
+├── .github/
+│   └── workflows/        # CI/CD workflows
+└── README.md
+```
+
+### Building the Webhook
+
+```bash
+go build -o webhook cmd/webhook/main.go
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes using [Conventional Commits](https://www.conventionalcommits.org/)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+### Commit Convention
+
+This project uses [semantic-release](https://github.com/semantic-release/semantic-release) for automated version management and package publishing. Please use the following commit message format:
+
+- `feat:` - A new feature (triggers minor version bump)
+- `fix:` - A bug fix (triggers patch version bump)
+- `docs:` - Documentation changes
+- `style:` - Code style changes (formatting, etc.)
+- `refactor:` - Code refactoring
+- `perf:` - Performance improvements
+- `test:` - Adding or updating tests
+- `chore:` - Maintenance tasks
+
+Example: `feat: add support for custom claim mapping`
+
+## 📄 License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+## 🌟 Acknowledgments
+
+- [Traefik](https://traefik.io/) - Cloud Native Application Proxy
+- [Casdoor](https://casdoor.org/) - UI-first Identity Access Management (IAM) / Single-Sign-On (SSO) platform
+
+## 📞 Support
+
+- 📫 [GitHub Issues](https://github.com/casdoor/traefik-casdoor-auth/issues)
+- 💬 [Discord Community](https://discord.gg/5rPsrAzK7S)
+- 📖 [Casdoor Documentation](https://casdoor.org/docs/overview)
+
+---
+
+Made with ❤️ by the [Casdoor](https://casdoor.org/) team
 
