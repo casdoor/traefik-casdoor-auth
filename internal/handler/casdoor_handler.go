@@ -110,17 +110,6 @@ func ForwardAuthHandlerWithState(c *gin.Context) {
 func CasdoorCallbackHandler(c *gin.Context) {
 	stateString := c.Query("state")
 	code := c.Query("code")
-	//write into cookie
-	var splits = strings.Split(config.CurrentConfig.PluginEndpoint, "://")
-	if len(splits) < 2 {
-		c.JSON(500, gin.H{
-			"error": "invalid webhook address in configuration" + stateString,
-		})
-		return
-	}
-	domain := splits[1]
-	c.SetCookie("client-code", code, 3600, "/", domain, false, true)
-	c.SetCookie("client-state", stateString, 3600, "/", domain, false, true)
 	stateNonce, _ := strconv.Atoi(stateString)
 	state, err := stateStorage.GetState(stateNonce)
 	if err != nil {
@@ -130,9 +119,17 @@ func CasdoorCallbackHandler(c *gin.Context) {
 		})
 		return
 	}
+	//write into cookie - use the original host from X-Forwarded-Host
+	host := state.Header.Get("X-Forwarded-Host")
+	// Extract domain without port for cookie
+	domain := host
+	if colonIndex := strings.Index(host, ":"); colonIndex != -1 {
+		domain = host[:colonIndex]
+	}
+	c.SetCookie("client-code", code, 3600, "/", domain, false, true)
+	c.SetCookie("client-state", stateString, 3600, "/", domain, false, true)
 	//construct the redirect
 	scheme := state.Header.Get("X-Forwarded-Proto")
-	host := state.Header.Get("X-Forwarded-Host")
 	uri := state.Header.Get("X-Forwarded-URI")
 	url := fmt.Sprintf("%s://%s%s", scheme, host, uri)
 	c.Redirect(307, url)
