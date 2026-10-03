@@ -33,7 +33,7 @@
   </a>
 </p>
 
-A powerful Traefik middleware plugin that integrates [Casdoor](https://casdoor.org/) authentication to protect your HTTP services. This solution provides seamless SSO (Single Sign-On) capabilities without requiring any changes to your backend services.
+A powerful Traefik middleware plugin that integrates [Casdoor](https://casdoor.ai/) authentication to protect your HTTP services. This solution provides seamless SSO (Single Sign-On) capabilities without requiring any changes to your backend services.
 
 ## 📋 Table of Contents
 
@@ -95,7 +95,7 @@ For more details, visit: https://github.com/lostb1t/traefik-casdoor-auth
 - Go 1.16 or higher
 - Traefik v2.x
 - Docker (for running example services)
-- A running [Casdoor](https://casdoor.org/) instance
+- A running [Casdoor](https://casdoor.ai/) instance
 
 Clone the repository:
 
@@ -116,7 +116,7 @@ cd traefik-casdoor-auth
    - **Organization Name**
    - **Application Name**
 
-For detailed instructions, see [Casdoor Application Configuration](https://casdoor.org/docs/application/config/).
+For detailed instructions, see [Casdoor Application Configuration](https://casdoor.ai/docs/application/config/).
 
 ### Step 2: Configure Traefik Static Configuration
 
@@ -366,15 +366,15 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 ## 🌟 Acknowledgments
 
 - [Traefik](https://traefik.io/) - Cloud Native Application Proxy
-- [Casdoor](https://casdoor.org/) - UI-first Identity Access Management (IAM) / Single-Sign-On (SSO) platform
+- [Casdoor](https://casdoor.ai/) - UI-first Identity Access Management (IAM) / Single-Sign-On (SSO) platform
 
 ## 📞 Support
 
 - 📫 [GitHub Issues](https://github.com/casdoor/traefik-casdoor-auth/issues)
 - 💬 [Discord Community](https://discord.gg/5rPsrAzK7S)
-- 📖 [Casdoor Documentation](https://casdoor.org/docs/overview)
+- 📖 [Casdoor Documentation](https://casdoor.ai/docs/overview/)
 
 ---
 
-Made with ❤️ by the [Casdoor](https://casdoor.org/) team
+Made with ❤️ by the [Casdoor](https://casdoor.ai/) team
 
