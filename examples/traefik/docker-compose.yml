@@ -1,0 +1,40 @@
+# Protects traefik/whoami at http://app.example.com with Casdoor.
+# Point auth.example.com and app.example.com to this machine (e.g., in /etc/hosts),
+# fill in the client ID and secret, and add http://auth.example.com/callback to the
+# Redirect URLs of the Casdoor application.
+services:
+  traefik:
+    image: traefik:v3.1
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  casdoor-forward-auth:
+    image: ghcr.io/casdoor/casdoor-forward-auth:latest
+    environment:
+      CASDOOR_ENDPOINT: https://door.casdoor.com
+      CLIENT_ID: <client ID>
+      CLIENT_SECRET: <client secret>
+      EXTERNAL_URL: http://auth.example.com
+      COOKIE_DOMAIN: example.com
+      COOKIE_SECRET: <random string of at least 32 characters>
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.casdoor-auth.rule=Host(`auth.example.com`)
+      - traefik.http.routers.casdoor-auth.entrypoints=web
+      - traefik.http.services.casdoor-auth.loadbalancer.server.port=9999
+      - traefik.http.middlewares.casdoor.forwardauth.address=http://casdoor-forward-auth:9999/auth
+      - traefik.http.middlewares.casdoor.forwardauth.authResponseHeaders=X-Forwarded-User,X-Forwarded-User-Id,X-Forwarded-Organization,X-Forwarded-Email,X-Forwarded-Groups,X-Forwarded-Roles
+
+  whoami:
+    image: traefik/whoami
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.whoami.rule=Host(`app.example.com`)
+      - traefik.http.routers.whoami.entrypoints=web
+      - traefik.http.routers.whoami.middlewares=casdoor

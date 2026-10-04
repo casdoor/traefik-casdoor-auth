@@ -1,0 +1,13 @@
+{
+  "listenAddr": ":9999",
+  "casdoorEndpoint": "https://door.casdoor.com",
+  "clientId": "<client ID of your Casdoor application>",
+  "clientSecret": "<client secret of your Casdoor application>",
+  "certificate": "",
+  "externalUrl": "https://auth.example.com",
+  "cookieSecret": "<random string of at least 32 characters>",
+  "cookieName": "casdoor_forward_auth",
+  "cookieDomain": "example.com",
+  "sessionTtl": "24h",
+  "allowedRedirectDomains": []
+}

@@ -1,380 +1,328 @@
-# Traefik Casdoor Auth Plugin
+# Casdoor Forward Auth
 
 <p align="center">
   <a href="#badge">
     <img alt="semantic-release" src="https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg">
   </a>
-  <a href="https://github.com/casdoor/traefik-casdoor-auth/actions/workflows/ci.yml">
-    <img alt="GitHub Workflow Status (branch)" src="https://img.shields.io/github/actions/workflow/status/casdoor/traefik-casdoor-auth/ci.yml?branch=master">
+  <a href="https://github.com/casdoor/casdoor-forward-auth/actions/workflows/ci.yml">
+    <img alt="GitHub Workflow Status (branch)" src="https://img.shields.io/github/actions/workflow/status/casdoor/casdoor-forward-auth/ci.yml?branch=master">
   </a>
-  <a href="https://github.com/casdoor/traefik-casdoor-auth/releases/latest">
-    <img alt="GitHub Release" src="https://img.shields.io/github/v/release/casdoor/traefik-casdoor-auth.svg">
+  <a href="https://github.com/casdoor/casdoor-forward-auth/releases/latest">
+    <img alt="GitHub Release" src="https://img.shields.io/github/v/release/casdoor/casdoor-forward-auth.svg">
   </a>
 </p>
 
 <p align="center">
-  <a href="https://goreportcard.com/report/github.com/casdoor/traefik-casdoor-auth">
-    <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/casdoor/traefik-casdoor-auth?style=flat-square">
+  <a href="https://goreportcard.com/report/github.com/casdoor/casdoor-forward-auth">
+    <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/casdoor/casdoor-forward-auth?style=flat-square">
   </a>
-  <a href="https://github.com/casdoor/traefik-casdoor-auth/blob/master/LICENSE">
-    <img src="https://img.shields.io/github/license/casdoor/traefik-casdoor-auth?style=flat-square" alt="license">
+  <a href="https://github.com/casdoor/casdoor-forward-auth/blob/master/LICENSE">
+    <img src="https://img.shields.io/github/license/casdoor/casdoor-forward-auth?style=flat-square" alt="license">
   </a>
-  <a href="https://github.com/casdoor/traefik-casdoor-auth/issues">
-    <img alt="GitHub issues" src="https://img.shields.io/github/issues/casdoor/traefik-casdoor-auth?style=flat-square">
+  <a href="https://github.com/casdoor/casdoor-forward-auth/issues">
+    <img alt="GitHub issues" src="https://img.shields.io/github/issues/casdoor/casdoor-forward-auth?style=flat-square">
   </a>
   <a href="#">
-    <img alt="GitHub stars" src="https://img.shields.io/github/stars/casdoor/traefik-casdoor-auth?style=flat-square">
+    <img alt="GitHub stars" src="https://img.shields.io/github/stars/casdoor/casdoor-forward-auth?style=flat-square">
   </a>
-  <a href="https://github.com/casdoor/traefik-casdoor-auth/network">
-    <img alt="GitHub forks" src="https://img.shields.io/github/forks/casdoor/traefik-casdoor-auth?style=flat-square">
+  <a href="https://github.com/casdoor/casdoor-forward-auth/network">
+    <img alt="GitHub forks" src="https://img.shields.io/github/forks/casdoor/casdoor-forward-auth?style=flat-square">
   </a>
   <a href="https://discord.gg/5rPsrAzK7S">
     <img alt="Casdoor" src="https://img.shields.io/discord/1022748306096537660?style=flat-square&logo=discord&label=discord&color=5865F2">
   </a>
 </p>
 
-A powerful Traefik middleware plugin that integrates [Casdoor](https://casdoor.ai/) authentication to protect your HTTP services. This solution provides seamless SSO (Single Sign-On) capabilities without requiring any changes to your backend services.
+Casdoor Forward Auth puts [Casdoor](https://casdoor.ai/) single sign-on in front of any web application, without changing the application. It works with the forward auth feature of reverse proxies:
 
-## 📋 Table of Contents
+- [Traefik](#traefik): `forwardAuth` middleware
+- [Caddy](#caddy): `forward_auth` directive
+- [Nginx](#nginx): `auth_request` module
+- [Kibana and other apps](#kibana) behind any of the above
 
-- [Features](#-features)
-- [Architecture](#-architecture)
-- [Installation](#-installation)
-- [Quick Start](#-quick-start)
-- [Configuration](#-configuration)
-- [How It Works](#-how-it-works)
-- [Docker Deployment](#-docker-deployment)
-- [Development](#-development)
-- [Contributing](#-contributing)
-- [License](#-license)
+Signed-in users reach the application with their identity in request headers (`X-Forwarded-User`, `X-Forwarded-Email`, ...), everyone else is sent to the Casdoor login page first.
 
-## ✨ Features
+> This project was called `traefik-casdoor-auth` and needed a Traefik plugin. Since v2 it's a standalone service that works with Traefik's built-in `forwardAuth` middleware, so the plugin is gone. See [Upgrading from traefik-casdoor-auth](#upgrading-from-traefik-casdoor-auth).
 
-- **Zero Backend Changes**: Add authentication to any HTTP service without modifying your application code
-- **Seamless SSO**: Integrate with Casdoor for centralized authentication and user management
-- **Traefik Middleware**: Implemented as a native Traefik plugin for easy integration
-- **Session Management**: Automatic session handling with secure cookies
-- **OAuth 2.0 Flow**: Complete OAuth 2.0 implementation with PKCE support
-- **Request Forwarding**: Transparent request modification and forwarding
-- **Stateless Architecture**: Webhook-based design for scalability
-
-## 🏗 Architecture
-
-This solution consists of two main components:
-
-1. **Traefik Plugin**: A middleware that intercepts HTTP requests and forwards them to the webhook for authentication decisions
-2. **Authentication Webhook**: A service that validates user sessions, handles OAuth flows, and instructs the plugin how to process requests
-
-### Component Interaction
+## How it works
 
 ```
-┌─────────┐      ┌──────────────┐      ┌──────────┐      ┌─────────┐
-│ Client  │─────▶│   Traefik    │─────▶│ Webhook  │─────▶│ Casdoor │
-│         │      │   Plugin     │      │  Service │      │  Server │
-└─────────┘      └──────────────┘      └──────────┘      └─────────┘
-                        │                     │
-                        └─────────────────────┘
-                         Authentication Flow
+Browser ──► reverse proxy ──(every request)──► casdoor-forward-auth /auth
+                 │                                   │
+                 │   200 + X-Forwarded-User, ...  ◄──┤  valid session cookie
+                 ▼                                   │
+           your application                          └─ no session: 302 to /login ──► Casdoor login
+                                                                                          │
+           session cookie set, 302 back to the page ◄── /callback ◄── authorization code ◄┘
 ```
 
-## 📦 Installation
+1. The reverse proxy asks `/auth` about every request. With a valid session cookie the answer is `200` with the identity headers, which the proxy copies into the request to your application.
+2. Without a session, a page load is redirected to `/login`, which redirects to Casdoor with a random `state` kept in a signed, short-lived cookie. Other requests (`POST`, `PUT`, ...) get `401`, since they can't follow a login redirect.
+3. Casdoor sends the user back to `/callback`. The service checks the `state`, exchanges the authorization code for an access token once, verifies the token's signature and audience, and stores the user in a signed `HttpOnly` session cookie.
+4. The user is redirected back to the page they asked for. From now on every request is answered from the cookie, without calling Casdoor.
 
-### Using Docker (Recommended)
+The service keeps no state on the server, so you can run several replicas behind a load balancer as long as they share the same `cookieSecret`.
 
-A pre-built webhook image is available for easy deployment:
+## Quick start
+
+### 1. Create an application in Casdoor
+
+In Casdoor, add an application (or use an existing one) and note its **Client ID** and **Client secret**. Add the callback of this service to its **Redirect URLs**:
+
+```
+https://auth.example.com/callback
+```
+
+where `https://auth.example.com` is the public URL of casdoor-forward-auth (`externalUrl` below).
+
+### 2. Run casdoor-forward-auth
+
+With Docker:
 
 ```bash
-docker pull ghcr.io/lostb1t/traefik-casdoor-auth:latest
+docker run -d -p 9999:9999 \
+  -e CASDOOR_ENDPOINT=https://door.casdoor.com \
+  -e CLIENT_ID=<client ID> \
+  -e CLIENT_SECRET=<client secret> \
+  -e EXTERNAL_URL=https://auth.example.com \
+  -e COOKIE_DOMAIN=example.com \
+  -e COOKIE_SECRET=$(openssl rand -hex 32) \
+  ghcr.io/casdoor/casdoor-forward-auth:latest
 ```
 
-For more details, visit: https://github.com/lostb1t/traefik-casdoor-auth
-
-### From Source
-
-**Prerequisites:**
-- Go 1.16 or higher
-- Traefik v2.x
-- Docker (for running example services)
-- A running [Casdoor](https://casdoor.ai/) instance
-
-Clone the repository:
+Or from source (Go 1.23+):
 
 ```bash
-git clone https://github.com/casdoor/traefik-casdoor-auth.git
-cd traefik-casdoor-auth
+go install github.com/casdoor/casdoor-forward-auth@latest
+casdoor-forward-auth -config config.json
 ```
 
-## 🚀 Quick Start
+Generate `COOKIE_SECRET` once and keep it: changing it signs everybody out.
 
-### Step 1: Configure Casdoor
+### 3. Configure your reverse proxy
 
-1. Access your Casdoor admin panel
-2. Create a new application for Traefik authentication
-3. Note down the following details:
-   - **Client ID**
-   - **Client Secret**
-   - **Organization Name**
-   - **Application Name**
+See [Traefik](#traefik), [Caddy](#caddy) or [Nginx](#nginx) below.
 
-For detailed instructions, see [Casdoor Application Configuration](https://casdoor.ai/docs/application/config/).
+## Configuration
 
-### Step 2: Configure Traefik Static Configuration
+Settings come from a JSON file (`-config config.json` or the `CONFIG_FILE` environment variable, see [conf/config.json](conf/config.json)) and/or environment variables. Environment variables override the file.
 
-Create or update your `traefik.yml`:
+| JSON key | Environment variable | Default | Description |
+|---|---|---|---|
+| `casdoorEndpoint` | `CASDOOR_ENDPOINT` | required | URL of the Casdoor server, e.g., `https://door.casdoor.com` |
+| `clientId` | `CLIENT_ID` | required | Client ID of the Casdoor application |
+| `clientSecret` | `CLIENT_SECRET` | required | Client secret of the Casdoor application |
+| `externalUrl` | `EXTERNAL_URL` | required | Public URL of this service as the browser sees it, e.g., `https://auth.example.com`. It may have a path, e.g., `https://app.example.com/_auth`, then all endpoints live under that path. `<externalUrl>/callback` must be a Redirect URL of the Casdoor application |
+| `cookieSecret` | `COOKIE_SECRET` | required | Secret of at least 32 characters for signing the cookies |
+| `cookieDomain` | `COOKIE_DOMAIN` | empty | Domain of the session cookie, e.g., `example.com` to share the session with all subdomains. Required when the applications aren't on the host of `externalUrl`. Must contain the host of `externalUrl` |
+| `cookieName` | `COOKIE_NAME` | `casdoor_forward_auth` | Name of the session cookie |
+| `sessionTtl` | `SESSION_TTL` | `24h` | Session lifetime, a Go duration like `8h` or `30m`. Never longer than the access token issued by Casdoor |
+| `allowedRedirectDomains` | `ALLOWED_REDIRECT_DOMAINS` (comma separated) | host of `externalUrl` and `.<cookieDomain>` | Where the user may be sent back after login or logout. `example.com` allows that host only, `.example.com` allows it and all subdomains. Anything else goes to `externalUrl` instead, so the login can't be used as an open redirect |
+| `certificate` | `CERTIFICATE` | empty | PEM certificate for verifying access tokens. When empty, the certificate is looked up in Casdoor's JWKS (`/.well-known/jwks`) by the token's key ID, which also follows certificate changes |
+| `listenAddr` | `LISTEN_ADDR` | `:9999` | Address to listen on |
+
+## Endpoints
+
+| Endpoint | Used by | Behavior |
+|---|---|---|
+| `/auth` | Traefik, Caddy | `200` + identity headers when signed in; otherwise `302` to the login for `GET`/`HEAD` and `401` for other methods (from `X-Forwarded-Method`) |
+| `/verify` | Nginx | `200` + identity headers when signed in, otherwise `401` |
+| `/login?rd=<url>` | browser | Starts the login and returns to `rd` afterwards |
+| `/callback` | Casdoor | OAuth callback |
+| `/logout?rd=<url>` | browser | Clears the session cookie, then redirects to `rd` (if given) |
+| `/healthz` | monitoring | Returns `ok` |
+| `/` | browser | Shows who is signed in |
+
+The identity headers are:
+
+| Header | Value |
+|---|---|
+| `X-Forwarded-User` | User name, e.g., `alice` |
+| `X-Forwarded-User-Id` | User ID |
+| `X-Forwarded-Organization` | Organization of the user, e.g., `built-in` |
+| `X-Forwarded-Email` | Email address |
+| `X-Forwarded-Groups` | Comma-separated groups, e.g., `built-in/dev,built-in/ops` |
+| `X-Forwarded-Roles` | Comma-separated role names |
+
+All of them are always present (possibly empty), so the reverse proxy replaces whatever the client sent in the same headers. Make sure your application is only reachable through the reverse proxy, otherwise anyone can send these headers directly.
+
+## Traefik
+
+Docker labels (a complete example is in [examples/traefik/docker-compose.yml](examples/traefik/docker-compose.yml)):
 
 ```yaml
-entryPoints:
-  web:
-    address: ":80"
+services:
+  casdoor-forward-auth:
+    image: ghcr.io/casdoor/casdoor-forward-auth:latest
+    environment:
+      CASDOOR_ENDPOINT: https://door.casdoor.com
+      CLIENT_ID: <client ID>
+      CLIENT_SECRET: <client secret>
+      EXTERNAL_URL: https://auth.example.com
+      COOKIE_DOMAIN: example.com
+      COOKIE_SECRET: <random string of at least 32 characters>
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.casdoor-auth.rule=Host(`auth.example.com`)
+      - traefik.http.services.casdoor-auth.loadbalancer.server.port=9999
+      - traefik.http.middlewares.casdoor.forwardauth.address=http://casdoor-forward-auth:9999/auth
+      - traefik.http.middlewares.casdoor.forwardauth.authResponseHeaders=X-Forwarded-User,X-Forwarded-User-Id,X-Forwarded-Organization,X-Forwarded-Email,X-Forwarded-Groups,X-Forwarded-Roles
 
-experimental:
-  localPlugins:
-    example:
-      moduleName: github.com/casdoor/plugindemo
-
-api:
-  insecure: true
-
-providers:
-  file:
-    filename: dev.yml
+  whoami:
+    image: traefik/whoami
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.whoami.rule=Host(`app.example.com`)
+      - traefik.http.routers.whoami.middlewares=casdoor
 ```
 
-**Note**: The `moduleName` must match the path relative to `plugins-local/src/` and the module name in `plugins-local/src/github.com/casdoor/plugindemo/.traefik.yml`.
-
-### Step 3: Configure Traefik Dynamic Configuration
-
-Create `dev.yml`:
+The same with the file provider:
 
 ```yaml
 http:
+  middlewares:
+    casdoor:
+      forwardAuth:
+        address: http://casdoor-forward-auth:9999/auth
+        authResponseHeaders:
+          - X-Forwarded-User
+          - X-Forwarded-User-Id
+          - X-Forwarded-Organization
+          - X-Forwarded-Email
+          - X-Forwarded-Groups
+          - X-Forwarded-Roles
+
   routers:
-    my-router:
-      rule: host(`webhook.domain.local`)
-      service: service-foo
-      entryPoints:
-        - web
+    casdoor-auth:
+      rule: Host(`auth.example.com`)
+      service: casdoor-auth
+    app:
+      rule: Host(`app.example.com`)
+      service: app
       middlewares:
-        - my-plugin
+        - casdoor
 
   services:
-    service-foo:
+    casdoor-auth:
       loadBalancer:
         servers:
-          - url: http://127.0.0.1:5000
-
-  middlewares:
-    my-plugin:
-      plugin:
-        example:
-          multationWebhook: "http://webhook.domain.local:9999/auth"
+          - url: http://casdoor-forward-auth:9999
+    app:
+      loadBalancer:
+        servers:
+          - url: http://app:8080
 ```
 
-### Step 4: Configure the Webhook
+Don't put the `casdoor` middleware on the router of casdoor-forward-auth itself.
 
-Create or update `conf/plugin.json`:
+### Without a separate host
 
-```json
-{
-    "casdoorEndpoint": "http://webhook.domain.local:8000",
-    "casdoorClientId": "YOUR_CLIENT_ID",
-    "casdoorClientSecret": "YOUR_CLIENT_SECRET",
-    "casdoorOrganization": "YOUR_ORGANIZATION",
-    "casdoorApplication": "YOUR_APPLICATION",
-    "pluginEndPoint": "http://webhook.domain.local:9999"
+If you only have one host, mount the service under a path of the application, e.g., `EXTERNAL_URL=https://app.example.com/_auth` (no `COOKIE_DOMAIN` needed), and route that path to it without the middleware:
+
+```yaml
+  routers:
+    casdoor-auth:
+      rule: Host(`app.example.com`) && PathPrefix(`/_auth`)
+      service: casdoor-auth
+    app:
+      rule: Host(`app.example.com`)
+      service: app
+      middlewares:
+        - casdoor
+```
+
+with `forwardAuth.address: http://casdoor-forward-auth:9999/_auth/auth`, and `https://app.example.com/_auth/callback` as the Redirect URL in Casdoor.
+
+## Caddy
+
+```
+auth.example.com {
+	reverse_proxy casdoor-forward-auth:9999
+}
+
+app.example.com {
+	forward_auth casdoor-forward-auth:9999 {
+		uri /auth
+		copy_headers X-Forwarded-User X-Forwarded-User-Id X-Forwarded-Organization X-Forwarded-Email X-Forwarded-Groups X-Forwarded-Roles
+	}
+	reverse_proxy app:8080
 }
 ```
 
-**Configuration Parameters:**
+## Nginx
 
-| Parameter | Description |
-|-----------|-------------|
-| `casdoorEndpoint` | URL of your Casdoor server |
-| `casdoorClientId` | Client ID from Casdoor application |
-| `casdoorClientSecret` | Client secret from Casdoor application |
-| `casdoorOrganization` | Organization name in Casdoor |
-| `casdoorApplication` | Application name in Casdoor |
-| `pluginEndPoint` | URL where the webhook service is accessible |
+Nginx's `auth_request` only understands `2xx`, `401` and `403`, so it calls `/verify` and redirects to the login itself on `401`:
 
-### Step 5: Update Hosts File
+```nginx
+server {
+    server_name auth.example.com;
 
-Add the following entry to your hosts file (`/etc/hosts` on Linux/Mac, `C:\Windows\System32\drivers\etc\hosts` on Windows):
+    location / {
+        proxy_pass http://casdoor-forward-auth:9999;
+        proxy_set_header Host $host;
+    }
+}
 
+server {
+    server_name app.example.com;
+
+    location = /_casdoor_verify {
+        internal;
+        proxy_pass http://casdoor-forward-auth:9999/verify;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+    }
+
+    location @casdoor_login {
+        return 302 https://auth.example.com/login?rd=$scheme://$http_host$request_uri;
+    }
+
+    location / {
+        auth_request /_casdoor_verify;
+        error_page 401 = @casdoor_login;
+
+        auth_request_set $casdoor_user $upstream_http_x_forwarded_user;
+        auth_request_set $casdoor_user_id $upstream_http_x_forwarded_user_id;
+        auth_request_set $casdoor_organization $upstream_http_x_forwarded_organization;
+        auth_request_set $casdoor_email $upstream_http_x_forwarded_email;
+        auth_request_set $casdoor_groups $upstream_http_x_forwarded_groups;
+        auth_request_set $casdoor_roles $upstream_http_x_forwarded_roles;
+        proxy_set_header X-Forwarded-User $casdoor_user;
+        proxy_set_header X-Forwarded-User-Id $casdoor_user_id;
+        proxy_set_header X-Forwarded-Organization $casdoor_organization;
+        proxy_set_header X-Forwarded-Email $casdoor_email;
+        proxy_set_header X-Forwarded-Groups $casdoor_groups;
+        proxy_set_header X-Forwarded-Roles $casdoor_roles;
+
+        proxy_pass http://app:8080;
+    }
+}
 ```
-127.0.0.1    webhook.domain.local
-```
 
-### Step 6: Start Services
+## Kibana
 
-**Start the example service:**
+To put Kibana (or Grafana, Prometheus, an internal admin page, ...) behind Casdoor, protect its host with any of the setups above, e.g., with Nginx replace `proxy_pass http://app:8080` by `proxy_pass http://kibana:5601`. Only expose Kibana through the reverse proxy. This replaces [elk-auth-casdoor](https://github.com/casdoor/elk-auth-casdoor).
+
+Applications that can trust a header for the user name, such as Grafana's [auth proxy](https://grafana.com/docs/grafana/latest/setup-grafana/configure-security/configure-authentication/auth-proxy/) (`header_name = X-Forwarded-User`), can also sign the user in automatically.
+
+## Logout
+
+`/logout` ends the session of casdoor-forward-auth only. The user stays signed in to Casdoor, so the next visit to a protected page goes through Casdoor without asking for the password again (unless the Casdoor session has ended too). `rd` must be inside `allowedRedirectDomains`.
+
+## Upgrading from traefik-casdoor-auth
+
+- The Traefik plugin (`plugins-local`, `experimental.localPlugins`) is no longer needed: remove it and use the built-in `forwardAuth` middleware as shown in [Traefik](#traefik).
+- The config file changed: `casdoorClientId` → `clientId`, `casdoorClientSecret` → `clientSecret`, `pluginEndpoint` → `externalUrl`; `casdoorOrganization` and `casdoorApplication` are no longer needed; `cookieSecret` is new and required. The flag is now `-config` instead of `-configFile`.
+- The Redirect URL in Casdoor stays `<externalUrl>/callback`.
+- The old version exchanged the authorization code again on every request, which fails after the first one, and replayed the request body after the login. Now a signed session cookie is used, and only page loads are redirected to the login.
+
+## Development
 
 ```bash
-docker compose up -d
+go test ./...
+go run . -config conf/config.json
 ```
 
-This starts a "whoami" container on port 5000 - a simple HTTP service that echoes request information.
+## License
 
-**Start Traefik:**
-
-```bash
-sudo traefik --configFile="traefik.yml" --log.level=DEBUG
-```
-
-**Start the webhook service:**
-
-```bash
-go run cmd/webhook/main.go -configFile="conf/plugin.json"
-```
-
-### Step 7: Test the Setup
-
-Visit http://webhook.domain.local in your browser.
-
-- **First visit**: You'll be redirected to Casdoor for authentication
-- **After login**: You'll be redirected back and see the "whoami" service output
-
-## ⚙️ Configuration
-
-### Traefik Plugin Configuration
-
-The plugin accepts the following parameter:
-
-- `multationWebhook`: The URL of the authentication webhook endpoint
-
-### Webhook Configuration
-
-All webhook configuration is stored in `conf/plugin.json`. See the [Quick Start](#step-4-configure-the-webhook) section for available parameters.
-
-## 🔄 How It Works
-
-### Authentication Flow
-
-1. **Initial Request**: Client requests a protected resource
-2. **Plugin Intercept**: Traefik plugin intercepts the request and forwards it to the webhook
-3. **Session Check**: Webhook checks for a valid authentication cookie
-4. **Redirect to Login**: If no valid session exists, webhook returns a 302 redirect to Casdoor
-5. **User Authentication**: User logs in via Casdoor
-6. **OAuth Callback**: Casdoor redirects to the webhook's callback handler
-7. **Token Exchange**: Webhook exchanges the authorization code for an access token
-8. **Cookie Creation**: Webhook sets a secure authentication cookie
-9. **Original Request Replay**: User is redirected to the original URL
-10. **Request Modification**: Plugin modifies the request based on webhook instructions and forwards to the backend service
-
-### Response Handling
-
-- **2xx Response from Webhook**: Request is modified according to webhook instructions and forwarded to the backend
-- **Non-2xx Response**: Request is blocked, and the webhook's response (including status code and body) is returned to the client
-
-## 🐳 Docker Deployment
-
-For production deployments, you can use Docker Compose. Here's an example configuration:
-
-```yaml
-version: '3'
-
-services:
-  traefik:
-    image: traefik:v2.9
-    command:
-      - "--configFile=/etc/traefik/traefik.yml"
-      - "--log.level=INFO"
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./traefik.yml:/etc/traefik/traefik.yml
-      - ./dev.yml:/etc/traefik/dev.yml
-      - ./plugins-local:/plugins-local
-
-  casdoor-auth:
-    image: ghcr.io/lostb1t/traefik-casdoor-auth:latest
-    environment:
-      - CONFIG_FILE=/config/plugin.json
-    volumes:
-      - ./conf:/config
-    ports:
-      - "9999:9999"
-```
-
-## 🛠 Development
-
-### Running Tests
-
-Run the plugin tests:
-
-```bash
-cd plugins-local/src/github.com/casdoor/plugindemo
-go test -v ./...
-```
-
-### Project Structure
-
-```
-.
-├── cmd/
-│   └── webhook/           # Webhook service main package
-├── internal/
-│   ├── config/           # Configuration handling
-│   ├── handler/          # HTTP handlers
-│   └── httpstate/        # Session state management
-├── plugins-local/
-│   └── src/
-│       └── github.com/
-│           └── casdoor/
-│               └── plugindemo/  # Traefik plugin implementation
-├── conf/                 # Configuration files
-├── .github/
-│   └── workflows/        # CI/CD workflows
-└── README.md
-```
-
-### Building the Webhook
-
-```bash
-go build -o webhook cmd/webhook/main.go
-```
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes using [Conventional Commits](https://www.conventionalcommits.org/)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-### Commit Convention
-
-This project uses [semantic-release](https://github.com/semantic-release/semantic-release) for automated version management and package publishing. Please use the following commit message format:
-
-- `feat:` - A new feature (triggers minor version bump)
-- `fix:` - A bug fix (triggers patch version bump)
-- `docs:` - Documentation changes
-- `style:` - Code style changes (formatting, etc.)
-- `refactor:` - Code refactoring
-- `perf:` - Performance improvements
-- `test:` - Adding or updating tests
-- `chore:` - Maintenance tasks
-
-Example: `feat: add support for custom claim mapping`
-
-## 📄 License
-
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
-## 🌟 Acknowledgments
-
-- [Traefik](https://traefik.io/) - Cloud Native Application Proxy
-- [Casdoor](https://casdoor.ai/) - UI-first Identity Access Management (IAM) / Single-Sign-On (SSO) platform
-
-## 📞 Support
-
-- 📫 [GitHub Issues](https://github.com/casdoor/traefik-casdoor-auth/issues)
-- 💬 [Discord Community](https://discord.gg/5rPsrAzK7S)
-- 📖 [Casdoor Documentation](https://casdoor.ai/docs/overview/)
-
----
-
-Made with ❤️ by the [Casdoor](https://casdoor.ai/) team
-
+[Apache-2.0](LICENSE)
