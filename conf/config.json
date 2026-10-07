@@ -9,5 +9,7 @@
   "cookieName": "casdoor_forward_auth",
   "cookieDomain": "example.com",
   "sessionTtl": "24h",
-  "allowedRedirectDomains": []
+  "allowedRedirectDomains": [],
+  "allowedRoles": [],
+  "allowedGroups": []
 }

@@ -35,6 +35,8 @@ type Config struct {
 	CookieDomain           string   `json:"cookieDomain"`
 	SessionTtl             string   `json:"sessionTtl"`
 	AllowedRedirectDomains []string `json:"allowedRedirectDomains"`
+	AllowedRoles           []string `json:"allowedRoles"`
+	AllowedGroups          []string `json:"allowedGroups"`
 
 	SessionDuration time.Duration `json:"-"`
 }
@@ -80,11 +82,18 @@ func (conf *Config) loadEnv() {
 		}
 	}
 
-	if value, ok := os.LookupEnv("ALLOWED_REDIRECT_DOMAINS"); ok {
-		conf.AllowedRedirectDomains = nil
-		for _, domain := range strings.Split(value, ",") {
-			if domain = strings.TrimSpace(domain); domain != "" {
-				conf.AllowedRedirectDomains = append(conf.AllowedRedirectDomains, domain)
+	lists := map[string]*[]string{
+		"ALLOWED_REDIRECT_DOMAINS": &conf.AllowedRedirectDomains,
+		"ALLOWED_ROLES":            &conf.AllowedRoles,
+		"ALLOWED_GROUPS":           &conf.AllowedGroups,
+	}
+	for name, field := range lists {
+		if value, ok := os.LookupEnv(name); ok {
+			*field = nil
+			for _, item := range strings.Split(value, ",") {
+				if item = strings.TrimSpace(item); item != "" {
+					*field = append(*field, item)
+				}
 			}
 		}
 	}

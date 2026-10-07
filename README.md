@@ -118,6 +118,8 @@ Settings come from a JSON file (`-config config.json` or the `CONFIG_FILE` envir
 | `cookieName` | `COOKIE_NAME` | `casdoor_forward_auth` | Name of the session cookie |
 | `sessionTtl` | `SESSION_TTL` | `24h` | Session lifetime, a Go duration like `8h` or `30m`. Never longer than the access token issued by Casdoor |
 | `allowedRedirectDomains` | `ALLOWED_REDIRECT_DOMAINS` (comma separated) | host of `externalUrl` and `.<cookieDomain>` | Where the user may be sent back after login or logout. `example.com` allows that host only, `.example.com` allows it and all subdomains. Anything else goes to `externalUrl` instead, so the login can't be used as an open redirect |
+| `allowedRoles` | `ALLOWED_ROLES` (comma separated) | empty | Only let in users with at least one of these Casdoor roles, on every protected application. See [Restricting access](#restricting-access) |
+| `allowedGroups` | `ALLOWED_GROUPS` (comma separated) | empty | Only let in users in at least one of these Casdoor groups, e.g., `built-in/dev` |
 | `certificate` | `CERTIFICATE` | empty | PEM certificate for verifying access tokens. When empty, the certificate is looked up in Casdoor's JWKS (`/.well-known/jwks`) by the token's key ID, which also follows certificate changes |
 | `listenAddr` | `LISTEN_ADDR` | `:9999` | Address to listen on |
 
@@ -125,8 +127,8 @@ Settings come from a JSON file (`-config config.json` or the `CONFIG_FILE` envir
 
 | Endpoint | Used by | Behavior |
 |---|---|---|
-| `/auth` | Traefik, Caddy | `200` + identity headers when signed in; otherwise `302` to the login for `GET`/`HEAD` and `401` for other methods (from `X-Forwarded-Method`) |
-| `/verify` | Nginx | `200` + identity headers when signed in, otherwise `401` |
+| `/auth` | Traefik, Caddy | `200` + identity headers when signed in; otherwise `302` to the login for `GET`/`HEAD` and `401` for other methods (from `X-Forwarded-Method`). `403` when signed in without a [required role or group](#restricting-access) |
+| `/verify` | Nginx | `200` + identity headers when signed in, otherwise `401`. `403` when signed in without a required role or group |
 | `/login?rd=<url>` | browser | Starts the login and returns to `rd` afterwards |
 | `/callback` | Casdoor | OAuth callback |
 | `/logout?rd=<url>` | browser | Clears the session cookie, then redirects to `rd` (if given) |
@@ -145,6 +147,22 @@ The identity headers are:
 | `X-Forwarded-Roles` | Comma-separated role names |
 
 All of them are always present (possibly empty), so the reverse proxy replaces whatever the client sent in the same headers. Make sure your application is only reachable through the reverse proxy, otherwise anyone can send these headers directly.
+
+## Restricting access
+
+By default every user who can sign in to the Casdoor application is let in. To let in only some of them, add `roles` and/or `groups` (comma separated) to the URL the reverse proxy calls, so each protected application can have its own rule:
+
+| Reverse proxy | Setting |
+|---|---|
+| Traefik | `forwardauth.address=http://casdoor-forward-auth:9999/auth?roles=admin` |
+| Caddy | `uri /auth?roles=admin,ops` |
+| Nginx | `proxy_pass http://casdoor-forward-auth:9999/verify?groups=built-in/dev;` |
+
+A user passes with at least one of the listed roles and, if `groups` is given too, at least one of the listed groups. Everyone else who is signed in gets `403`. Roles are matched by name (e.g., `admin`), groups by their full name (e.g., `built-in/dev`). `allowedRoles` and `allowedGroups` in the [configuration](#configuration) do the same for all applications at once.
+
+This also gives you "sign up first, get access later": new users (e.g., from Google sign-up) have no role and get `403` until an admin assigns them one on the Roles page of Casdoor.
+
+Roles and groups are read at login and kept for the lifetime of the session (`sessionTtl`). After changing them in Casdoor, the user has to open `/logout` and sign in again, or wait for the session to end.
 
 ## Traefik
 

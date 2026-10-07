@@ -260,6 +260,42 @@ func TestFullLogin(t *testing.T) {
 	}
 }
 
+func TestAllowedRolesAndGroups(t *testing.T) {
+	fc := newFakeCasdoor(t)
+	h := newTestHandler(t, fc, "https://auth.example.com")
+	sessionCookie, _ := login(t, h, fc, "")
+
+	// alice has the role "admin" and the group "built-in/dev"
+	cases := map[string]int{
+		"/auth":                                   http.StatusOK,
+		"/auth?roles=admin":                       http.StatusOK,
+		"/auth?roles=ops,%20admin":                http.StatusOK,
+		"/auth?roles=ops":                         http.StatusForbidden,
+		"/auth?groups=built-in/dev":               http.StatusOK,
+		"/auth?groups=built-in/ops":               http.StatusForbidden,
+		"/auth?roles=admin&groups=built-in/ops":   http.StatusForbidden,
+		"/verify?roles=admin&groups=built-in/dev": http.StatusOK,
+		"/verify?roles=ops":                       http.StatusForbidden,
+	}
+	for target, want := range cases {
+		rec := serve(h, http.MethodGet, target, nil, sessionCookie)
+		if rec.Code != want {
+			t.Errorf("%s: got status %d, want %d", target, rec.Code, want)
+		}
+		if want == http.StatusForbidden && rec.Header().Get(HeaderUser) != "" {
+			t.Errorf("%s: identity headers on a forbidden response", target)
+		}
+	}
+
+	h.conf.AllowedRoles = []string{"ops"}
+	if rec := serve(h, http.MethodGet, "/auth", nil, sessionCookie); rec.Code != http.StatusForbidden {
+		t.Errorf("allowedRoles: got status %d", rec.Code)
+	}
+	if rec := serve(h, http.MethodGet, "/auth?roles=admin", nil, sessionCookie); rec.Code != http.StatusOK {
+		t.Errorf("allowedRoles plus query: got status %d", rec.Code)
+	}
+}
+
 func TestUnauthenticated(t *testing.T) {
 	fc := newFakeCasdoor(t)
 	h := newTestHandler(t, fc, "https://auth.example.com")

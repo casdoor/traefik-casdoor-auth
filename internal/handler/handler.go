@@ -91,8 +91,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // 200 with the identity headers when signed in, otherwise a redirect to the login.
 func (h *Handler) handleAuth(w http.ResponseWriter, r *http.Request) {
 	if user := h.getSessionUser(r); user != nil {
-		setIdentityHeaders(w.Header(), user)
-		w.WriteHeader(http.StatusOK)
+		h.allow(w, r, user)
 		return
 	}
 
@@ -112,6 +111,21 @@ func (h *Handler) handleVerify(w http.ResponseWriter, r *http.Request) {
 	user := h.getSessionUser(r)
 	if user == nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	h.allow(w, r, user)
+}
+
+// allow answers 200 with the identity headers, or 403 when the user has none of the
+// roles or groups required by the config or by the "roles" and "groups" query
+// parameters, which the reverse proxy sets per protected application.
+func (h *Handler) allow(w http.ResponseWriter, r *http.Request, user *session.User) {
+	query := r.URL.Query()
+	roles := append(splitList(query.Get("roles")), h.conf.AllowedRoles...)
+	groups := append(splitList(query.Get("groups")), h.conf.AllowedGroups...)
+	if !matchAny(roles, user.Roles) || !matchAny(groups, user.Groups) {
+		http.Error(w, fmt.Sprintf("Forbidden: %s/%s is not allowed to access this application. If your roles or groups were changed, sign out at %s/logout and sign in again.", user.Organization, user.Name, h.conf.ExternalUrl), http.StatusForbidden)
 		return
 	}
 
@@ -365,6 +379,32 @@ func setIdentityHeaders(header http.Header, user *session.User) {
 	header.Set(HeaderEmail, user.Email)
 	header.Set(HeaderGroups, strings.Join(user.Groups, ","))
 	header.Set(HeaderRoles, strings.Join(user.Roles, ","))
+}
+
+func splitList(value string) []string {
+	var res []string
+	for _, item := range strings.Split(value, ",") {
+		if item = strings.TrimSpace(item); item != "" {
+			res = append(res, item)
+		}
+	}
+	return res
+}
+
+// matchAny reports whether the user has at least one of the required values.
+// Nothing required means everyone is allowed.
+func matchAny(required []string, actual []string) bool {
+	if len(required) == 0 {
+		return true
+	}
+	for _, r := range required {
+		for _, a := range actual {
+			if r == a {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func randomHex(n int) (string, error) {
