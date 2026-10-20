@@ -15,6 +15,7 @@
 package config
 
 import (
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -24,21 +25,24 @@ import (
 )
 
 type Config struct {
-	ListenAddr             string   `json:"listenAddr"`
-	CasdoorEndpoint        string   `json:"casdoorEndpoint"`
-	ClientId               string   `json:"clientId"`
-	ClientSecret           string   `json:"clientSecret"`
-	Certificate            string   `json:"certificate"`
-	ExternalUrl            string   `json:"externalUrl"`
-	CookieSecret           string   `json:"cookieSecret"`
-	CookieName             string   `json:"cookieName"`
-	CookieDomain           string   `json:"cookieDomain"`
-	SessionTtl             string   `json:"sessionTtl"`
-	AllowedRedirectDomains []string `json:"allowedRedirectDomains"`
-	AllowedRoles           []string `json:"allowedRoles"`
-	AllowedGroups          []string `json:"allowedGroups"`
+	ListenAddr              string   `json:"listenAddr"`
+	CasdoorEndpoint         string   `json:"casdoorEndpoint"`
+	CasdoorInternalEndpoint string   `json:"casdoorInternalEndpoint"`
+	CasdoorCaFile           string   `json:"casdoorCaFile"`
+	ClientId                string   `json:"clientId"`
+	ClientSecret            string   `json:"clientSecret"`
+	Certificate             string   `json:"certificate"`
+	ExternalUrl             string   `json:"externalUrl"`
+	CookieSecret            string   `json:"cookieSecret"`
+	CookieName              string   `json:"cookieName"`
+	CookieDomain            string   `json:"cookieDomain"`
+	SessionTtl              string   `json:"sessionTtl"`
+	AllowedRedirectDomains  []string `json:"allowedRedirectDomains"`
+	AllowedRoles            []string `json:"allowedRoles"`
+	AllowedGroups           []string `json:"allowedGroups"`
 
-	SessionDuration time.Duration `json:"-"`
+	SessionDuration time.Duration  `json:"-"`
+	CasdoorRootCas  *x509.CertPool `json:"-"`
 }
 
 // Load reads the config from the JSON file at path (if path is not empty), lets the
@@ -65,16 +69,18 @@ func Load(path string) (*Config, error) {
 
 func (conf *Config) loadEnv() {
 	vars := map[string]*string{
-		"LISTEN_ADDR":      &conf.ListenAddr,
-		"CASDOOR_ENDPOINT": &conf.CasdoorEndpoint,
-		"CLIENT_ID":        &conf.ClientId,
-		"CLIENT_SECRET":    &conf.ClientSecret,
-		"CERTIFICATE":      &conf.Certificate,
-		"EXTERNAL_URL":     &conf.ExternalUrl,
-		"COOKIE_SECRET":    &conf.CookieSecret,
-		"COOKIE_NAME":      &conf.CookieName,
-		"COOKIE_DOMAIN":    &conf.CookieDomain,
-		"SESSION_TTL":      &conf.SessionTtl,
+		"LISTEN_ADDR":               &conf.ListenAddr,
+		"CASDOOR_ENDPOINT":          &conf.CasdoorEndpoint,
+		"CASDOOR_INTERNAL_ENDPOINT": &conf.CasdoorInternalEndpoint,
+		"CASDOOR_CA_FILE":           &conf.CasdoorCaFile,
+		"CLIENT_ID":                 &conf.ClientId,
+		"CLIENT_SECRET":             &conf.ClientSecret,
+		"CERTIFICATE":               &conf.Certificate,
+		"EXTERNAL_URL":              &conf.ExternalUrl,
+		"COOKIE_SECRET":             &conf.CookieSecret,
+		"COOKIE_NAME":               &conf.CookieName,
+		"COOKIE_DOMAIN":             &conf.CookieDomain,
+		"SESSION_TTL":               &conf.SessionTtl,
 	}
 	for name, field := range vars {
 		if value, ok := os.LookupEnv(name); ok {
@@ -126,6 +132,27 @@ func (conf *Config) normalize() error {
 	conf.CasdoorEndpoint = strings.TrimRight(conf.CasdoorEndpoint, "/")
 	if _, err := parseHttpUrl(conf.CasdoorEndpoint); err != nil {
 		return fmt.Errorf("invalid casdoorEndpoint: %w", err)
+	}
+
+	conf.CasdoorInternalEndpoint = strings.TrimRight(conf.CasdoorInternalEndpoint, "/")
+	if conf.CasdoorInternalEndpoint == "" {
+		conf.CasdoorInternalEndpoint = conf.CasdoorEndpoint
+	} else if _, err := parseHttpUrl(conf.CasdoorInternalEndpoint); err != nil {
+		return fmt.Errorf("invalid casdoorInternalEndpoint: %w", err)
+	}
+
+	if conf.CasdoorCaFile != "" {
+		data, err := os.ReadFile(conf.CasdoorCaFile)
+		if err != nil {
+			return fmt.Errorf("failed to read casdoorCaFile: %w", err)
+		}
+		conf.CasdoorRootCas, err = x509.SystemCertPool()
+		if err != nil {
+			conf.CasdoorRootCas = x509.NewCertPool()
+		}
+		if !conf.CasdoorRootCas.AppendCertsFromPEM(data) {
+			return fmt.Errorf("casdoorCaFile %s contains no PEM certificate", conf.CasdoorCaFile)
+		}
 	}
 
 	conf.ExternalUrl = strings.TrimRight(conf.ExternalUrl, "/")

@@ -21,10 +21,13 @@ import (
 	"crypto/x509/pkix"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -175,7 +178,7 @@ func login(t *testing.T, h *Handler, fc *fakeCasdoor, rd string) (*http.Cookie, 
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.HasPrefix(authorizeUrl.String(), fc.server.URL+"/login/oauth/authorize?") {
+	if !strings.HasPrefix(authorizeUrl.String(), h.conf.CasdoorEndpoint+"/login/oauth/authorize?") {
 		t.Fatalf("login: unexpected redirect %s", authorizeUrl)
 	}
 	if got := authorizeUrl.Query().Get("redirect_uri"); got != "https://auth.example.com/callback" {
@@ -354,6 +357,45 @@ func TestCallbackRejectsTokenForOtherClient(t *testing.T) {
 	sessionCookie, rec := login(t, h, fc, "")
 	if rec.Code != http.StatusBadGateway || sessionCookie != nil {
 		t.Fatalf("callback: got status %d, want 502 and no session", rec.Code)
+	}
+}
+
+func TestInternalEndpointWithCaFile(t *testing.T) {
+	fc := newFakeCasdoor(t)
+	tlsServer := httptest.NewTLSServer(fc.server.Config.Handler)
+	t.Cleanup(tlsServer.Close)
+
+	caFile := filepath.Join(t.TempDir(), "ca.pem")
+	caPem := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: tlsServer.Certificate().Raw})
+	if err := os.WriteFile(caFile, caPem, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	h := newTestHandler(t, fc, "https://auth.example.com")
+	h.conf.CasdoorEndpoint = "https://door.example.com"
+	h.conf.CasdoorInternalEndpoint = tlsServer.URL
+	h = New(h.conf)
+
+	// the self-signed certificate of the internal endpoint is not trusted without the CA file
+	if sessionCookie, rec := login(t, h, fc, ""); rec.Code != http.StatusBadGateway || sessionCookie != nil {
+		t.Fatalf("callback without CA file: got status %d, want 502 and no session", rec.Code)
+	}
+
+	t.Setenv("CASDOOR_ENDPOINT", "https://door.example.com")
+	t.Setenv("CASDOOR_INTERNAL_ENDPOINT", tlsServer.URL)
+	t.Setenv("CASDOOR_CA_FILE", caFile)
+	conf, err := config.Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	h = New(conf)
+
+	sessionCookie, rec := login(t, h, fc, "https://app.example.com/")
+	if rec.Code != http.StatusFound || sessionCookie == nil {
+		t.Fatalf("callback with CA file: got status %d: %s", rec.Code, rec.Body.String())
+	}
+	if rec = serve(h, http.MethodGet, "/verify", nil, sessionCookie); rec.Code != http.StatusOK || rec.Header().Get(HeaderUser) != "alice" {
+		t.Fatalf("verify with session: got status %d", rec.Code)
 	}
 }
 

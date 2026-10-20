@@ -109,7 +109,9 @@ Settings come from a JSON file (`-config config.json` or the `CONFIG_FILE` envir
 
 | JSON key | Environment variable | Default | Description |
 |---|---|---|---|
-| `casdoorEndpoint` | `CASDOOR_ENDPOINT` | required | URL of the Casdoor server, e.g., `https://door.casdoor.com` |
+| `casdoorEndpoint` | `CASDOOR_ENDPOINT` | required | Public URL of the Casdoor server as the browser sees it, e.g., `https://door.casdoor.com`. The login redirects the browser there |
+| `casdoorInternalEndpoint` | `CASDOOR_INTERNAL_ENDPOINT` | `casdoorEndpoint` | URL this service uses to call Casdoor itself (token exchange and JWKS), e.g., `http://casdoor:8000` on the same Docker network, so these calls don't have to go out through the public URL |
+| `casdoorCaFile` | `CASDOOR_CA_FILE` | empty | PEM file of extra CA certificates to trust when calling Casdoor, e.g., for a self-signed or private CA certificate. The system CAs stay trusted, and certificates are always verified |
 | `clientId` | `CLIENT_ID` | required | Client ID of the Casdoor application |
 | `clientSecret` | `CLIENT_SECRET` | required | Client secret of the Casdoor application |
 | `externalUrl` | `EXTERNAL_URL` | required | Public URL of this service as the browser sees it, e.g., `https://auth.example.com`. It may have a path, e.g., `https://app.example.com/_auth`, then all endpoints live under that path. `<externalUrl>/callback` must be a Redirect URL of the Casdoor application |

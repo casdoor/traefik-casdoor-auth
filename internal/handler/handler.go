@@ -17,6 +17,7 @@ package handler
 import (
 	"crypto/rand"
 	"crypto/subtle"
+	"crypto/tls"
 	"encoding/hex"
 	"fmt"
 	"log"
@@ -60,11 +61,17 @@ type loginState struct {
 
 func New(conf *config.Config) *Handler {
 	httpClient := &http.Client{Timeout: 15 * time.Second}
+	if conf.CasdoorRootCas != nil {
+		transport := http.DefaultTransport.(*http.Transport).Clone()
+		transport.TLSClientConfig = &tls.Config{RootCAs: conf.CasdoorRootCas}
+		httpClient.Transport = transport
+	}
+
 	h := &Handler{
 		conf:       conf,
 		basePath:   conf.BasePath(),
-		casdoor:    casdoorsdk.NewClient(conf.CasdoorEndpoint, conf.ClientId, conf.ClientSecret, conf.Certificate, "", ""),
-		verifier:   token.NewVerifier(conf.CasdoorEndpoint, conf.ClientId, conf.Certificate, httpClient),
+		casdoor:    casdoorsdk.NewClient(conf.CasdoorInternalEndpoint, conf.ClientId, conf.ClientSecret, conf.Certificate, "", ""),
+		verifier:   token.NewVerifier(conf.CasdoorInternalEndpoint, conf.ClientId, conf.Certificate, httpClient),
 		httpClient: httpClient,
 		sessions:   session.NewCodec(conf.CookieSecret, "session"),
 		states:     session.NewCodec(conf.CookieSecret, "login-state"),

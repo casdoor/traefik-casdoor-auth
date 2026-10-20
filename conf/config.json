@@ -1,6 +1,8 @@
 {
   "listenAddr": ":9999",
   "casdoorEndpoint": "https://door.casdoor.com",
+  "casdoorInternalEndpoint": "",
+  "casdoorCaFile": "",
   "clientId": "<client ID of your Casdoor application>",
   "clientSecret": "<client secret of your Casdoor application>",
   "certificate": "",

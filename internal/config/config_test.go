@@ -49,6 +49,9 @@ func TestLoadDefaults(t *testing.T) {
 	if conf.CasdoorEndpoint != "https://door.casdoor.com" || conf.ExternalUrl != "https://auth.example.com" {
 		t.Errorf("trailing slashes not trimmed: %s, %s", conf.CasdoorEndpoint, conf.ExternalUrl)
 	}
+	if conf.CasdoorInternalEndpoint != conf.CasdoorEndpoint || conf.CasdoorRootCas != nil {
+		t.Errorf("internal endpoint: got %s, root CAs: %v", conf.CasdoorInternalEndpoint, conf.CasdoorRootCas)
+	}
 	if conf.ListenAddr != ":9999" || conf.CookieName != "casdoor_forward_auth" || conf.SessionDuration != 24*time.Hour {
 		t.Errorf("unexpected defaults: %+v", conf)
 	}
@@ -68,13 +71,14 @@ func TestLoadEnv(t *testing.T) {
 	t.Setenv("EXTERNAL_URL", "http://app.example.com/_auth")
 	t.Setenv("SESSION_TTL", "1h30m")
 	t.Setenv("ALLOWED_REDIRECT_DOMAINS", "app.example.com, .example.org")
+	t.Setenv("CASDOOR_INTERNAL_ENDPOINT", "http://casdoor:8000/")
 
 	conf, err := Load(writeConfig(t, validConfig))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if conf.ClientSecret != "secret-from-env" || conf.SessionDuration != 90*time.Minute {
+	if conf.ClientSecret != "secret-from-env" || conf.SessionDuration != 90*time.Minute || conf.CasdoorInternalEndpoint != "http://casdoor:8000" {
 		t.Errorf("env not applied: %+v", conf)
 	}
 	if conf.IsSecure() || conf.BasePath() != "/_auth" {
@@ -93,6 +97,8 @@ func TestLoadInvalid(t *testing.T) {
 		`"cookieDomain": ".Example.com"`:                      `"cookieDomain": "example.org"`,
 		`"casdoorEndpoint": "https://door.casdoor.com/",`:     `"casdoorEndpoint": "ftp://door.casdoor.com",`,
 		`"clientId": "id",`:                                   `"clientId": "id", "sessionTtl": "forever",`,
+		`{`:                                                   `{"casdoorInternalEndpoint": "casdoor:8000",`,
+		`}`:                                                   `, "casdoorCaFile": "missing.pem"}`,
 	}
 	for old, replacement := range cases {
 		content := strings.Replace(validConfig, old, replacement, 1)
